@@ -1,13 +1,14 @@
 name = "cloudinary-delete"
 compatibility_date = "2025-07-05"
 main = "src/index.ts"
-node_compat = true
-
-[vars]
-# Optional: fallback defaults
-CLOUDINARY_CLOUD_NAME = ""
-CLOUDINARY_API_KEY = ""
-CLOUDINARY_API_SECRET = ""
 
 [build]
 command = "npm install"
+
+[[compatibility_flags]]
+value = "nodejs_compat"
+
+[vars]
+CLOUDINARY_CLOUD_NAME = ""
+CLOUDINARY_API_KEY = ""
+CLOUDINARY_API_SECRET = ""
