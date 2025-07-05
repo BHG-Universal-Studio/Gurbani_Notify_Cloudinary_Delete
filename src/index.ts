@@ -1,28 +1,46 @@
-import { Hono } from 'hono'
-import { env } from 'hono/adapter'
-import cloudinary from 'cloudinary'
+export interface Env {
+  CLOUDINARY_CLOUD_NAME: string;
+  CLOUDINARY_API_KEY: string;
+  CLOUDINARY_API_SECRET: string;
+}
 
-const app = new Hono()
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    if (request.method !== "POST") {
+      return new Response("Method Not Allowed", { status: 405 });
+    }
 
-app.post('/', async (c) => {
-  const body = await c.req.json()
-  const publicId = body.public_id
-  if (!publicId) return c.json({ success: false, error: 'Missing public_id' }, 400)
+    let publicId: string;
+    try {
+      const body = await request.json();
+      publicId = body.public_id;
+      if (!publicId) throw new Error("Missing public_id");
+    } catch {
+      return new Response("Invalid JSON body", { status: 400 });
+    }
 
-  const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = env<{ CLOUDINARY_CLOUD_NAME: string, CLOUDINARY_API_KEY: string, CLOUDINARY_API_SECRET: string }>(c)
+    // Build the basic auth header
+    const auth = btoa(`${env.CLOUDINARY_API_KEY}:${env.CLOUDINARY_API_SECRET}`);
 
-  cloudinary.v2.config({
-    cloud_name: CLOUDINARY_CLOUD_NAME,
-    api_key: CLOUDINARY_API_KEY,
-    api_secret: CLOUDINARY_API_SECRET
-  })
+    const url = `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/image/destroy`;
 
-  try {
-    const result = await cloudinary.v2.uploader.destroy(publicId)
-    return c.json({ success: true, result })
-  } catch (err: any) {
-    return c.json({ success: false, error: err.message }, 500)
-  }
-})
+    const formData = new URLSearchParams();
+    formData.append("public_id", publicId);
+    formData.append("invalidate", "true");
 
-export default app
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData,
+    });
+
+    const result = await response.json();
+    return new Response(JSON.stringify(result), {
+      status: response.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  },
+};
