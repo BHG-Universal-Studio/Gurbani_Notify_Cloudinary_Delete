@@ -1,46 +1,49 @@
-export interface Env {
-  CLOUDINARY_CLOUD_NAME: string;
-  CLOUDINARY_API_KEY: string;
-  CLOUDINARY_API_SECRET: string;
-}
-
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method !== "POST") {
-      return new Response("Method Not Allowed", { status: 405 });
+  async fetch(request: Request): Promise<Response> {
+    if (request.method !== 'POST') {
+      return new Response('Only POST allowed', { status: 405 });
     }
 
-    let publicId: string;
-    try {
-      const body = await request.json();
-      publicId = body.public_id;
-      if (!publicId) throw new Error("Missing public_id");
-    } catch {
-      return new Response("Invalid JSON body", { status: 400 });
+    const { public_id } = await request.json();
+    if (!public_id) {
+      return new Response('Missing public_id', { status: 400 });
     }
 
-    // Build the basic auth header
-    const auth = btoa(`${env.CLOUDINARY_API_KEY}:${env.CLOUDINARY_API_SECRET}`);
+    const cloudName = ENV.CLOUDINARY_CLOUD_NAME;
+    const apiKey = ENV.CLOUDINARY_API_KEY;
+    const apiSecret = ENV.CLOUDINARY_API_SECRET;
 
-    const url = `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/image/destroy`;
+    const timestamp = Math.floor(Date.now() / 1000);
+    const stringToSign = `public_id=${public_id}&timestamp=${timestamp}${apiSecret}`;
+    const signature = await sha1(stringToSign);
 
     const formData = new URLSearchParams();
-    formData.append("public_id", publicId);
-    formData.append("invalidate", "true");
+    formData.append('public_id', public_id);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp.toString());
+    formData.append('signature', signature);
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+      method: 'POST',
       body: formData,
     });
 
-    const result = await response.json();
-    return new Response(JSON.stringify(result), {
-      status: response.status,
-      headers: { "Content-Type": "application/json" },
-    });
+    const result = await response.text();
+    return new Response(result, { status: response.status });
   },
+};
+
+async function sha1(message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+declare const ENV: {
+  CLOUDINARY_CLOUD_NAME: string;
+  CLOUDINARY_API_KEY: string;
+  CLOUDINARY_API_SECRET: string;
 };
