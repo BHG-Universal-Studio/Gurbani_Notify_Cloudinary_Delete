@@ -2,11 +2,10 @@ name = "cloudinary-delete"
 compatibility_date = "2025-07-05"
 main = "src/index.ts"
 
+compatibility_flags = ["nodejs_compat"]
+
 [build]
 command = "npm install"
-
-[[compatibility_flags]]
-value = "nodejs_compat"
 
 [vars]
 CLOUDINARY_CLOUD_NAME = ""
