@@ -1,14 +1,16 @@
 {
-  "name": "cloudinary-delete-api",
+  "name": "cloudinary-delete",
   "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
+  "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "cloudinary": "^1.41.3",
-    "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "cloudinary": "^1.39.2",
+    "hono": "^3.11.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
   }
 }
