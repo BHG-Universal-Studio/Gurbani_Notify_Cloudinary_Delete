@@ -14,9 +14,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// ✅ Ping endpoint to wake up server
+app.get("/ping", (req, res) => {
+  res.status(200).json({ success: true, message: "pong", timestamp: Date.now() });
+});
+
+// ✅ Delete from Cloudinary
 app.post("/delete", async (req, res) => {
   const publicId = req.body.public_id;
-  if (!publicId) return res.status(400).json({ success: false, message: "Missing public_id" });
+  if (!publicId) {
+    return res.status(400).json({ success: false, message: "Missing public_id" });
+  }
 
   try {
     const result = await cloudinary.uploader.destroy(publicId);
@@ -26,5 +34,6 @@ app.post("/delete", async (req, res) => {
   }
 });
 
+// ✅ Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`✅ Cloudinary delete server running on port ${port}`));
