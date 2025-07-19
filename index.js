@@ -1,43 +1,80 @@
-const express = require('express');
-const admin = require('firebase-admin');
-const app = express();
-app.use(express.json());
+const express = require("express");
+const admin = require("firebase-admin");
+const cloudinary = require("cloudinary").v2;
+const bodyParser = require("body-parser");
+const cors = require("cors");
 
-// ✅ Load service account from env
+// Setup Express
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// ===================== Firebase Admin Init =====================
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
-
-// ✅ Ping check
-app.get('/ping', (req, res) => {
-  res.json({ message: 'pong', time: Date.now() });
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
 });
 
-// ✅ Send test FCM notification
-app.post('/send-test-notification', async (req, res) => {
-  const token = 'e14qjEkFSeewRknw56X0oQ:APA91bHVmGLzcWHfvxAqrgjncr03IWeaRBZAwyg1RBS5Ex5qZLEeRyxvHCI34AxWVndiZuXMTUvFWeRPoyYqz0bpiDMyvuelfWkJN0mecjvkwzgteUizr9c';
+// ===================== Cloudinary Config =====================
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// ===================== Routes =====================
+
+// Home route
+app.get("/", (req, res) => {
+  res.send("✅ Gurbani Backend API is live!");
+});
+
+// Trigger test push notification
+app.post("/send-notification", async (req, res) => {
+  // Hardcoded test values
+  const token = "YOUR_DEVICE_FCM_TOKEN_HERE"; // ⬅️ Replace with your actual FCM device token
+  const title = "New Post!";
+  const body = "Waheguru Ji Ka Khalsa 🙏";
+  const data = {
+    destination: "FeedFragment",
+    postId: "abc123",
+  };
 
   const message = {
-    notification: {
-      title: 'Test Notification',
-      body: '🚀 FCM from Render is working!',
+    token,
+    notification: { title, body },
+    data,
+    android: {
+      priority: "high",
     },
-    token: token,
+    apns: {
+      headers: { "apns-priority": "10" },
+      payload: {
+        aps: { sound: "default" },
+      },
+    },
   };
 
   try {
     const response = await admin.messaging().send(message);
-    res.json({ success: true, response });
+    res.status(200).json({
+      success: true,
+      message: "Notification sent successfully",
+      messageId: response,
+    });
   } catch (error) {
-    console.error('❌ Error sending message:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error("FCM Error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to send notification",
+      details: error.message,
+    });
   }
 });
 
-// ✅ Render port
+// Start Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
