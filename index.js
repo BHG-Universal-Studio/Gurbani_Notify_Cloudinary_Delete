@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
 // Trigger test push notification
 app.post("/send-notification", async (req, res) => {
   // Hardcoded test values
-  const token = "YOUR_DEVICE_FCM_TOKEN_HERE"; // ⬅️ Replace with your actual FCM device token
+  const token = "esJFAiY4RvSIifa0sjYGCT:APA91bGfiKVus11FyglbtoL_fD4eM0F4dipM_h1TpJ7nB7fqfTeMME1CYnybwhOXnMClATUJ8L6RNpyd00YSbzWSXBI_d79ujW55rpw1VTACqRB73sTaNOo";
   const title = "New Post!";
   const body = "Waheguru Ji Ka Khalsa 🙏";
   const data = {
