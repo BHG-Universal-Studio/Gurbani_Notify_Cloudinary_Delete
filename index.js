@@ -156,6 +156,49 @@ app.post("/send-path", async (req, res) => {
   }
 });
 
+
+// 🧪 Send Test Notification to Specific Device Token
+app.post("/send-test-notification", async (req, res) => {
+  const { token, title, body } = req.body;
+  if (!token || !title || !body) {
+    return res.status(400).json({ success: false, message: "Missing token, title or body" });
+  }
+
+  const message = {
+    notification: {
+      title,
+      body
+    },
+    android: {
+      notification: {
+        sound: "default"
+      }
+    },
+    apns: {
+      payload: {
+        aps: {
+          sound: "default"
+        }
+      }
+    },
+    to: token
+  };
+
+  try {
+    const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "key=" + process.env.FIREBASE_SERVER_KEY
+      }
+    });
+
+    return res.status(200).json({ success: true, message: "Test notification sent", fcm: response.data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 // ✅ Start Server
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`✅ Server running on port ${port}`));
