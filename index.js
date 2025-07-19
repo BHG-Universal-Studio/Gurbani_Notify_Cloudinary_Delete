@@ -156,13 +156,11 @@ app.post("/send-path", async (req, res) => {
   }
 });
 
-
-// 🧪 Send Test Notification to Specific Device Token
+// 🧪 Send Test Notification to Specific Device Token (Hardcoded)
 app.post("/send-test-notification", async (req, res) => {
-  const { token, title, body } = req.body;
-  if (!token || !title || !body) {
-    return res.status(400).json({ success: false, message: "Missing token, title or body" });
-  }
+  const token = "e14qjEkFSeewRknw56X0oQ:APA91bHVmGLzcWHfvxAqrgjncr03IWeaRBZAwyg1RBS5Ex5qZLEeRyxvHCI34AxWVndiZuXMTUvFWeRPoyYqz0bpiDMyvuelfWkJN0mecjvkwzgteUizr9c";
+  const title = "Waheguru Ji";
+  const body = "Test";
 
   const message = {
     notification: {
