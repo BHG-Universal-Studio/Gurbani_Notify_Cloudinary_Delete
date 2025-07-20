@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// 🌩️ Cloudinary Config
+// 🔐 Cloudinary Config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -20,12 +20,23 @@ cloudinary.config({
 
 // 🔐 Firebase Admin Init
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// ✅ Ping
+// 🔐 Authorization Middleware
+function authorizeWorker(req, res, next) {
+  const providedKey = req.headers["x-api-key"];
+  const validKey = process.env.NOTIFY_SECRET_KEY;
+
+  if (!providedKey || providedKey !== validKey) {
+    return res.status(401).json({ success: false, error: "Unauthorized request" });
+  }
+
+  next();
+}
+
+// ✅ Ping Endpoint
 app.get("/ping", (req, res) => {
   res.status(200).json({ success: true, message: "pong", timestamp: Date.now() });
 });
@@ -43,7 +54,7 @@ app.post("/delete", async (req, res) => {
   }
 });
 
-// 🧠 Random Hukamnama Titles and Bodies
+// 🧠 Hukamnama Messages
 const hukamTitles = [
   "Daily Hukamnama",
   "Today’s Divine Order",
@@ -56,8 +67,8 @@ const hukamBodies = [
   "Guru’s words for today are here"
 ];
 
-// 🔔 Send Hukamnama Notification (to topic)
-app.post("/send-hukamnama", async (req, res) => {
+// 🔔 Send Hukamnama Notification (secured)
+app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
   const channelId = "hukamnama";
   const title = hukamTitles[Math.floor(Math.random() * hukamTitles.length)];
   const body = hukamBodies[Math.floor(Math.random() * hukamBodies.length)];
@@ -87,8 +98,8 @@ app.post("/send-hukamnama", async (req, res) => {
   }
 });
 
-// 🔔 Send Path Notification (to topic)
-app.post("/send-path", async (req, res) => {
+// 🔔 Send Path Notification (secured)
+app.post("/send-path", authorizeWorker, async (req, res) => {
   const { title, body } = req.body;
   if (!title || !body) {
     return res.status(400).json({ success: false, message: "Missing title or body" });
@@ -119,8 +130,8 @@ app.post("/send-path", async (req, res) => {
   }
 });
 
-// 🔔 Send Notification To Specific Device Token
-app.post("/send-notification", async (req, res) => {
+// 🔔 Send Notification To Specific Device Token (secured)
+app.post("/send-notification", authorizeWorker, async (req, res) => {
   const { token, title, body, data } = req.body;
 
   if (!token || !title || !body) {
@@ -138,7 +149,7 @@ app.post("/send-notification", async (req, res) => {
         aps: { sound: "default" }
       }
     },
-    data: data || {} // Optional data payload
+    data: data || {}
   };
 
   try {
