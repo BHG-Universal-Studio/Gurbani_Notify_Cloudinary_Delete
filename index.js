@@ -1,9 +1,10 @@
 const express = require("express");
 const cloudinary = require("cloudinary").v2;
 const cors = require("cors");
-const axios = require("axios");
-
+const admin = require("firebase-admin");
 const app = express();
+
+// 🧩 Middleware
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -15,12 +16,19 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ✅ Ping Endpoint
+// 🔐 Firebase Admin Init
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+// ✅ Ping
 app.get("/ping", (req, res) => {
   res.status(200).json({ success: true, message: "pong", timestamp: Date.now() });
 });
 
-// ✅ Delete from Cloudinary
+// ✅ Delete Cloudinary Image
 app.post("/delete", async (req, res) => {
   const publicId = req.body.public_id;
   if (!publicId) return res.status(400).json({ success: false, message: "Missing public_id" });
@@ -33,171 +41,94 @@ app.post("/delete", async (req, res) => {
   }
 });
 
-// 🧠 Random Hukamnama Messages
-const hukamTitles = [
-  "Amrit Vele da Hukamnama Sahib Ji",
-  "Waheguru Ji da aadesh – Aaj da Hukamnama",
-  "Aaj da pavittar Hukamnama hazir hai",
-  "Guru Sahib di kirpa naal hukam prapat hoya hai",
-  "Amrit Vela – Guru da bachan mil gaya ji",
-  "Navi subah, navey ashirwad – Hukamnama suno",
-  "Sehaj vich vaso – Aaj da hukam aagaya ji",
-  "Satguru da hukum – Amrit Vele di mehar",
-  "Shuru karo din Guru de bachan naal",
-  "Waheguru di reham – Aaj da hukam suno",
-  "Hukamnama Sahib Ji – Guru Sahiban Ji di roshni",
-  "Aaj vi Guru Sahib Ji ne kirpa kiti – Hukam tyar hai",
-  "Rooh di roti – Amrit Vele da hukam prapt karo",
-  "Satnam Waheguru Ji – Aaj da Hukam mila hai",
-  "Aaj Da Hukamnama 📜 Waheguru Ji 🙏"
-];
+// 🧠 Random Hukamnama Titles and Bodies
+const hukamTitles = [/* your titles... */];
+const hukamBodies = [/* your bodies... */];
 
-const hukamBodies = [
-  "Amrit Vele di mehar naal aaj da pavittar Hukamnama hazir hai.",
-  "Apni rooh nu Guru Sahib Ji de bachan naal jagaayiye. 🌅",
-  "Amrit Vele di roshni vich Guru Sahib da pavittar hukam aagaya hai. Apne din di shuruaat Guru de ashirwad naal karo. 🌸🙏",
-  "Aaj da hukam, rooh di roti ban ke aaya hai. Naam Simran naal judo te Guru di kirpa mehsoos karo. 🌅🕊️",
-  "Shri Guru Granth Sahib Ji ne aaj vi apna bachan bakshia hai. Vekho, ki Guru ne kehna hai Sade layi aaj. 🙏✨",
-  "Amrit Vele da samah vakhri barkat leke aaya hai. Aaj da hukam padho, te apne din nu Guru de naal jodo. 🌞📜",
-  "Aaj vi Guru di rehmat vich hukam prapt hoya hai. Guru da bachan jeevan vich sukh, sehaj te shanti le aunda hai. 💛",
-  "Guru Sahib da aadesh – ik vadiya raah hai jeevan layi. Is hukam vich hai shanti, gyaan te pyar. 🙏📖",
-  "Har subah di sab ton vaddi daat – Guru da hukamnama. Ajj di kirpa nu miss na karo. 🌼✨",
-  "Waheguru Ji ne aaj vi apne sevak layi sandesh bhejiya hai. Aao, us pavittar bachan nu padhiye. 📜🌞",
-  "Ik vaar Guru da bachan sun lo – man diyaan uljhanaan hal ho jaan. Aaj da hukam jivan nu roshan kare. 🕯️"
-];
-
-// 🔥 Send Hukamnama Notification
+// 🔔 Send Hukamnama Notification (to topic)
 app.post("/send-hukamnama", async (req, res) => {
-  const channelId = "hukamnama"; // channelId from app
-
+  const channelId = "hukamnama";
   const title = hukamTitles[Math.floor(Math.random() * hukamTitles.length)];
   const body = hukamBodies[Math.floor(Math.random() * hukamBodies.length)];
 
   const message = {
-    notification: {
-      title,
-      body
-    },
+    notification: { title, body },
     android: {
-      notification: {
-        channel_id: channelId,
-        sound: "default"
-      }
+      notification: { channelId, sound: "default" }
     },
     apns: {
       payload: {
-        aps: {
-          sound: "default"
-        }
+        aps: { sound: "default" }
       }
     },
     data: {
       destination: "hukamnama"
     },
-    to: "/topics/" + channelId
+    topic: channelId
   };
 
   try {
-    const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "key=" + process.env.FIREBASE_SERVER_KEY
-      }
-    });
-
-    return res.status(200).json({ success: true, message: "Hukamnama sent", fcm: response.data });
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, message: "Hukamnama sent", response });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 🔥 Send Path Notification
+// 🔔 Send Path Notification (to topic)
 app.post("/send-path", async (req, res) => {
   const { title, body } = req.body;
-  if (!title || !body) {
-    return res.status(400).json({ success: false, message: "Missing title or body" });
-  }
+  if (!title || !body) return res.status(400).json({ success: false, message: "Missing title or body" });
 
   const message = {
-    notification: {
-      title,
-      body
-    },
+    notification: { title, body },
     android: {
-      notification: {
-        channel_id: "path",
-        sound: "default"
-      }
+      notification: { channelId: "path", sound: "default" }
     },
     apns: {
       payload: {
-        aps: {
-          sound: "default"
-        }
+        aps: { sound: "default" }
       }
     },
     data: {
       destination: "path"
     },
-    to: "/topics/path"
+    topic: "path"
   };
 
   try {
-    const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "key=" + process.env.FIREBASE_SERVER_KEY
-      }
-    });
-
-    return res.status(200).json({ success: true, message: "Path notification sent", fcm: response.data });
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, message: "Path notification sent", response });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-
-// 🧪 Send Test Notification to Specific Device Token
+// 🔔 Send Test Notification (to device token)
 app.post("/send-test-notification", async (req, res) => {
   const { token, title, body } = req.body;
-  if (!token || !title || !body) {
-    return res.status(400).json({ success: false, message: "Missing token, title or body" });
-  }
+  if (!token || !title || !body) return res.status(400).json({ success: false, message: "Missing token, title or body" });
 
   const message = {
-    notification: {
-      title,
-      body
-    },
+    notification: { title, body },
     android: {
-      notification: {
-        sound: "default"
-      }
+      notification: { sound: "default" }
     },
     apns: {
       payload: {
-        aps: {
-          sound: "default"
-        }
+        aps: { sound: "default" }
       }
     },
-    to: token
+    token
   };
 
   try {
-    const response = await axios.post("https://fcm.googleapis.com/fcm/send", message, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "key=" + process.env.FIREBASE_SERVER_KEY
-      }
-    });
-
-    return res.status(200).json({ success: true, message: "Test notification sent", fcm: response.data });
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, message: "Test notification sent", response });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // ✅ Start Server
 const port = process.env.PORT || 3000;
