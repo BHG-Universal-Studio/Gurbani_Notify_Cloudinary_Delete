@@ -1,14 +1,27 @@
 {
-  "name": "fcm-server",
+  "name": "gurbani-backend",
   "version": "1.0.0",
-  "description": "Render server for sending FCM push notifications",
+  "description": "Backend server for Gurbani App with Cloudinary image deletion and Firebase push notifications",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "firebase-admin": "^12.0.0",
-    "dotenv": "^16.4.5"
-  }
+    "axios": "^1.6.8",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "firebase",
+    "cloudinary",
+    "fcm",
+    "push-notifications",
+    "gurbani"
+  ],
+  "author": "You",
+  "license": "MIT"
 }
