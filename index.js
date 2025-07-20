@@ -26,15 +26,17 @@ admin.initializeApp({
 
 // 🔐 Authorization Middleware
 function authorizeWorker(req, res, next) {
-  const providedKey = req.headers["x-api-key"];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
   const validKey = process.env.NOTIFY_SECRET_KEY;
 
-  if (!providedKey || providedKey !== validKey) {
+  if (!token || token !== validKey) {
     return res.status(401).json({ success: false, error: "Unauthorized request" });
   }
 
   next();
 }
+
 
 // ✅ Ping Endpoint
 app.get("/ping", (req, res) => {
