@@ -120,17 +120,34 @@ app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
   }
 });
 
-// 🔔 Send Path Notification (secured)
+
+
+
+
+
+
+// 🧠 path Messages
+const pathTitles = [
+  "🕯️ Blessed evening – Rehras Sahib awaits",
+  "🕯️ Blessed evening – Rehras Sahib awaits"
+];
+
+const pathBodies = [
+  "It’s time to connect with the Divine. Let Rehras Sahib calm your soul. 🌆.",
+    "It’s time to connect with the Divine. Let Rehras Sahib calm your soul. 🌆."
+
+];
+
+// 🔔 Send Hukamnama Notification (secured)
 app.post("/send-path", authorizeWorker, async (req, res) => {
-  const { title, body } = req.body;
-  if (!title || !body) {
-    return res.status(400).json({ success: false, message: "Missing title or body" });
-  }
+  const channelId = "path";
+  const title = pathTitles[Math.floor(Math.random() * pathTitles.length)];
+  const body = pathBodies[Math.floor(Math.random() * pathBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId: "path", sound: "default" }
+      notification: { channelId, sound: "default" }
     },
     apns: {
       payload: {
@@ -140,17 +157,23 @@ app.post("/send-path", authorizeWorker, async (req, res) => {
     data: {
       destination: "path"
     },
-    topic: "path"
+    topic: channelId
   };
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, message: "Path notification sent", response });
+    res.status(200).json({ success: true, message: "Path sent", response });
   } catch (err) {
     console.error("FCM Error (path):", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
+
+
+
+
 
 // 🔔 Send Notification To Specific Device Token (secured)
 app.post("/send-notification", authorizeWorker, async (req, res) => {
