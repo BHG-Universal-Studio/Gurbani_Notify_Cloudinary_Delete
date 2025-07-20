@@ -1,7 +1,7 @@
 {
-  "name": "gurbani-backend",
+  "name": "cloudinary-fcm-api",
   "version": "1.0.0",
-  "description": "Backend server for Gurbani App with Cloudinary image deletion and Firebase push notifications",
+  "description": "Express API for Cloudinary deletion and FCM push notifications",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -10,18 +10,10 @@
     "axios": "^1.6.8",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "firebase-admin": "^11.10.1"
   },
   "engines": {
-    "node": ">=14.0.0"
-  },
-  "keywords": [
-    "firebase",
-    "cloudinary",
-    "fcm",
-    "push-notifications",
-    "gurbani"
-  ],
-  "author": "You",
-  "license": "MIT"
+    "node": ">=16.0.0"
+  }
 }
