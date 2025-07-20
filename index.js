@@ -89,14 +89,12 @@ app.post("/send-hukamnama", async (req, res) => {
 
 // 🔔 Send Path Notification (to topic)
 app.post("/send-path", async (req, res) => {
-  const { token, title, body } = req.body;
-
-  if (!token || !title || !body) {
-    return res.status(400).json({ success: false, message: "Missing token, title, or body" });
+  const { title, body } = req.body;
+  if (!title || !body) {
+    return res.status(400).json({ success: false, message: "Missing title or body" });
   }
 
   const message = {
-    token,
     notification: { title, body },
     android: {
       notification: { channelId: "path", sound: "default" }
@@ -107,19 +105,19 @@ app.post("/send-path", async (req, res) => {
       }
     },
     data: {
-      navigateTo: "path"
-    }
+      destination: "path"
+    },
+    topic: "path"
   };
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, message: "Path notification sent to token", response });
+    res.status(200).json({ success: true, message: "Path notification sent", response });
   } catch (err) {
     console.error("FCM Error (path):", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // 🔔 Send Notification To Specific Device Token
 app.post("/send-notification", async (req, res) => {
