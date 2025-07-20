@@ -58,15 +58,35 @@ app.post("/delete", async (req, res) => {
 
 // 🧠 Hukamnama Messages
 const hukamTitles = [
-  "Daily Hukamnama",
-  "Today’s Divine Order",
-  "Hukamnama from Sri Darbar Sahib"
+  "Amrit Vele da Hukamnama Sahib Ji",
+  "Waheguru Ji da aadesh – Aaj da Hukamnama",
+  "Aaj da pavittar Hukamnama hazir hai",
+  "Guru Sahib di kirpa naal hukam prapat hoya hai",
+  "Amrit Vela – Guru da bachan mil gaya ji",
+  "Navi subah, navey ashirwad – Hukamnama suno",
+  "Sehaj vich vaso – Aaj da hukam aagaya ji",
+  "Satguru da hukum – Amrit Vele di mehar",
+  "Shuru karo din Guru de bachan naal",
+  "Waheguru di reham – Aaj da hukam suno",
+  "Hukamnama Sahib Ji – Guru Sahiban Ji di roshni",
+  "Aaj vi Guru Sahib Ji ne kirpa kiti – Hukam tyar hai",
+  "Rooh di roti – Amrit Vele da hukam prapt karo",
+  "Satnam Waheguru Ji – Aaj da Hukam mila hai",
+  "Aaj Da Hukamnama 📜 Waheguru Ji 🙏"
 ];
 
 const hukamBodies = [
-  "Listen to today’s divine message",
-  "New Hukamnama available now",
-  "Guru’s words for today are here"
+  "Amrit Vele di mehar naal aaj da pavittar Hukamnama hazir hai.",
+  "Apni rooh nu Guru Sahib Ji de bachan naal jagaayiye. 🌅",
+  "Amrit Vele di roshni vich Guru Sahib da pavittar hukam aagaya hai. Apne din di shuruaat Guru de ashirwad naal karo. 🌸🙏",
+  "Aaj da hukam, rooh di roti ban ke aaya hai. Naam Simran naal judo te Guru di kirpa mehsoos karo. 🌅🕊️",
+  "Shri Guru Granth Sahib Ji ne aaj vi apna bachan bakshia hai. Vekho, ki Guru ne kehna hai Sade layi aaj. 🙏✨",
+  "Amrit Vele da samah vakhri barkat leke aaya hai. Aaj da hukam padho, te apne din nu Guru de naal jodo. 🌞📜",
+  "Aaj vi Guru di rehmat vich hukam prapt hoya hai. Guru da bachan jeevan vich sukh, sehaj te shanti le aunda hai. 💛",
+  "Guru Sahib da aadesh – ik vadiya raah hai jeevan layi. Is hukam vich hai shanti, gyaan te pyar. 🙏📖",
+  "Har subah di sab ton vaddi daat – Guru da hukamnama. Ajj di kirpa nu miss na karo. 🌼✨",
+  "Waheguru Ji ne aaj vi apne sevak layi sandesh bhejiya hai. Aao, us pavittar bachan nu padhiye. 📜🌞",
+  "Ik vaar Guru da bachan sun lo – man diyaan uljhanaan hal ho jaan. Aaj da hukam jivan nu roshan kare. 🕯️"
 ];
 
 // 🔔 Send Hukamnama Notification (secured)
