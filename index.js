@@ -107,7 +107,7 @@ app.post("/send-path", async (req, res) => {
       }
     },
     data: {
-      destination: "path"
+      navigateTo: "path"
     }
   };
 
