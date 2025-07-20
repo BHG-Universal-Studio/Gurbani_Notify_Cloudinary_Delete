@@ -2,6 +2,8 @@ const express = require("express");
 const cloudinary = require("cloudinary").v2;
 const cors = require("cors");
 const admin = require("firebase-admin");
+require("dotenv").config();
+
 const app = express();
 
 // 🧩 Middleware
@@ -20,7 +22,7 @@ cloudinary.config({
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
 });
 
 // ✅ Ping
@@ -42,8 +44,17 @@ app.post("/delete", async (req, res) => {
 });
 
 // 🧠 Random Hukamnama Titles and Bodies
-const hukamTitles = [/* your titles... */];
-const hukamBodies = [/* your bodies... */];
+const hukamTitles = [
+  "Daily Hukamnama",
+  "Today’s Divine Order",
+  "Hukamnama from Sri Darbar Sahib"
+];
+
+const hukamBodies = [
+  "Listen to today’s divine message",
+  "New Hukamnama available now",
+  "Guru’s words for today are here"
+];
 
 // 🔔 Send Hukamnama Notification (to topic)
 app.post("/send-hukamnama", async (req, res) => {
@@ -71,6 +82,7 @@ app.post("/send-hukamnama", async (req, res) => {
     const response = await admin.messaging().send(message);
     res.status(200).json({ success: true, message: "Hukamnama sent", response });
   } catch (err) {
+    console.error("FCM Error (hukamnama):", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -78,7 +90,9 @@ app.post("/send-hukamnama", async (req, res) => {
 // 🔔 Send Path Notification (to topic)
 app.post("/send-path", async (req, res) => {
   const { title, body } = req.body;
-  if (!title || !body) return res.status(400).json({ success: false, message: "Missing title or body" });
+  if (!title || !body) {
+    return res.status(400).json({ success: false, message: "Missing title or body" });
+  }
 
   const message = {
     notification: { title, body },
@@ -100,16 +114,21 @@ app.post("/send-path", async (req, res) => {
     const response = await admin.messaging().send(message);
     res.status(200).json({ success: true, message: "Path notification sent", response });
   } catch (err) {
+    console.error("FCM Error (path):", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 🔔 Send Test Notification (to device token)
-app.post("/send-test-notification", async (req, res) => {
-  const { token, title, body } = req.body;
-  if (!token || !title || !body) return res.status(400).json({ success: false, message: "Missing token, title or body" });
+// 🔔 Send Notification To Specific Device Token
+app.post("/send-notification", async (req, res) => {
+  const { token, title, body, data } = req.body;
+
+  if (!token || !title || !body) {
+    return res.status(400).json({ success: false, error: "Missing required fields" });
+  }
 
   const message = {
+    token,
     notification: { title, body },
     android: {
       notification: { sound: "default" }
@@ -119,17 +138,20 @@ app.post("/send-test-notification", async (req, res) => {
         aps: { sound: "default" }
       }
     },
-    token
+    data: data || {} // Optional data payload
   };
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, message: "Test notification sent", response });
+    res.status(200).json({ success: true, message: "Notification sent", response });
   } catch (err) {
+    console.error("FCM Error (token):", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ✅ Start Server
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`✅ Server running on port ${port}`));
+app.listen(port, () => {
+  console.log(`✅ Server running on port ${port}`);
+});
