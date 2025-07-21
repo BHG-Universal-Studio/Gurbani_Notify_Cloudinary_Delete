@@ -119,16 +119,17 @@ const hukamBodies = [
   "Ik vaar Guru da bachan sun lo – man diyaan uljhanaan hal ho jaan. Aaj da hukam jivan nu roshan kare. 🕯️"
 ];
 
+
 // 🔔 Send Hukamnama Notification (secured)
 app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
-  const channelId = "hukamnama";
+  const channelId = "bhg_hukamnama_channel"; // ✅ corrected channelId
   const title = hukamTitles[Math.floor(Math.random() * hukamTitles.length)];
   const body = hukamBodies[Math.floor(Math.random() * hukamBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId, sound: "default" }
+      notification: { channelId, sound: "default" } // ✅ fixed channelId
     },
     apns: {
       payload: {
@@ -136,9 +137,9 @@ app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "hukamnama"
+      destination: "hukamnama" // ✅ fixed destination
     },
-    topic: channelId
+    topic: "hukamnama" // ✅ corrected topic
   };
 
   try {
@@ -149,7 +150,6 @@ app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 
 
