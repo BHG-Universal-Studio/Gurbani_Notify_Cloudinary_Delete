@@ -156,6 +156,7 @@ app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
 
 
 
+
 // 🧠 path rehras sahib Messages
 const pathTitles = [
   "🕯️ Blessed Evening – Rehras Sahib Awaits",
@@ -196,16 +197,17 @@ const pathBodies = [
 ];
 
 
-// 🔔 Send Hukamnama Notification (secured)
+
+// 🔔 Send Path Notification (secured)
 app.post("/send-path", authorizeWorker, async (req, res) => {
-  const channelId = "path";
+  const channelId = "bhg_path_channel"; // ✅ corrected channelId
   const title = pathTitles[Math.floor(Math.random() * pathTitles.length)];
   const body = pathBodies[Math.floor(Math.random() * pathBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId, sound: "default" }
+      notification: { channelId, sound: "default" } // ✅ fixed channelId
     },
     apns: {
       payload: {
@@ -213,9 +215,9 @@ app.post("/send-path", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "path"
+      destination: "path" // ✅ fixed destination
     },
-    topic: channelId
+    topic: "path" // ✅ corrected topic
   };
 
   try {
@@ -226,7 +228,6 @@ app.post("/send-path", authorizeWorker, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 
 
@@ -258,16 +259,18 @@ const pathNightBodies = [
 ];
 
 
-// 🔔 Send Hukamnama Notification (secured)
+
+
+// 🔔 Send Night Path Notification (secured)
 app.post("/send-night-path", authorizeWorker, async (req, res) => {
-  const channelId = "path-night";
-  const title = pathNightTitles[Math.floor(Math.random() * pathNightTitles.length)];
+  const channelId = "bhg_path_night_channel"; // ✅ corrected channelId
+ const title = pathNightTitles[Math.floor(Math.random() * pathNightTitles.length)];
   const body = pathNightBodies[Math.floor(Math.random() * pathNightBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId, sound: "default" }
+      notification: { channelId, sound: "default" } // ✅ fixed channelId
     },
     apns: {
       payload: {
@@ -275,9 +278,9 @@ app.post("/send-night-path", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "path-night"
+      destination: "pathnight" // ✅ fixed destination
     },
-    topic: channelId
+    topic: "path-night" // ✅ corrected topic
   };
 
   try {
@@ -288,6 +291,7 @@ app.post("/send-night-path", authorizeWorker, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 
 
