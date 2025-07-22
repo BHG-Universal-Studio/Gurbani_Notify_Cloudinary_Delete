@@ -39,7 +39,7 @@ function authorizeWorker(req, res, next) {
 
 
 // ✅ Ping Endpoint (secured)
-app.get("/ping", authorizeWorker, (req, res) => {
+app.get("/ping-server", authorizeWorker, (req, res) => {
   res.status(200).json({ success: true, message: "pong", timestamp: Date.now() });
 });
 
