@@ -328,6 +328,52 @@ app.post("/send-notification", authorizeWorker, async (req, res) => {
   }
 });
 
+
+
+
+// 🔔 Send Hukamnama Notification To Specific Device Token (secured)
+app.post("/send-hukamnama-token", authorizeWorker, async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ success: false, error: "Missing token" });
+  }
+
+  const title = hukamTitles[Math.floor(Math.random() * hukamTitles.length)];
+  const body = hukamBodies[Math.floor(Math.random() * hukamBodies.length)];
+
+  const message = {
+    token,
+    notification: { title, body },
+    android: {
+      notification: {
+        sound: "default",
+        channelId: "bhg_hukamnama_channel", 
+      }
+    },
+    apns: {
+      payload: {
+        aps: { sound: "default" }
+      }
+    },
+    data: {
+      destination: "hukamnama"
+    }
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, message: "Hukamnama sent to token", response });
+  } catch (err) {
+    console.error("FCM Error (hukamnama token):", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+
+
+
 // ✅ Start Server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
