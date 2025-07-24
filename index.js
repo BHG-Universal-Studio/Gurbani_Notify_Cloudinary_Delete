@@ -121,15 +121,15 @@ const hukamBodies = [
 
 
 // 🔔 Send Hukamnama Notification (secured)
-app.post("/send-hukamnamaNew", authorizeWorker, async (req, res) => {
-  const channelId = "bhg_hukamnama_channel"; // ✅ corrected channelId
+app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
+  const channelId = "bhg_hukamnama_channel"; 
   const title = hukamTitles[Math.floor(Math.random() * hukamTitles.length)];
   const body = hukamBodies[Math.floor(Math.random() * hukamBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId, sound: "default" } // ✅ fixed channelId
+      notification: { channelId, sound: "default" } 
     },
     apns: {
       payload: {
@@ -137,9 +137,9 @@ app.post("/send-hukamnamaNew", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "hukamnama" // ✅ fixed destination
+      destination: "hukamnama"
     },
-    topic: "hukamnama" // ✅ corrected topic
+    topic: "daily-hukamnama" 
   };
 
   try {
@@ -199,15 +199,15 @@ const pathBodies = [
 
 
 // 🔔 Send Path Notification (secured)
-app.post("/send-pathNew", authorizeWorker, async (req, res) => {
-  const channelId = "bhg_path_channel"; // ✅ corrected channelId
+app.post("/send-path", authorizeWorker, async (req, res) => {
+  const channelId = "bhg_path_channel"; 
   const title = pathTitles[Math.floor(Math.random() * pathTitles.length)];
   const body = pathBodies[Math.floor(Math.random() * pathBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId, sound: "default" } // ✅ fixed channelId
+      notification: { channelId, sound: "default" }
     },
     apns: {
       payload: {
@@ -215,9 +215,9 @@ app.post("/send-pathNew", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "path" // ✅ fixed destination
+      destination: "path" 
     },
-    topic: "path" // ✅ corrected topic
+    topic: "daily-path" 
   };
 
   try {
@@ -262,15 +262,15 @@ const pathNightBodies = [
 
 
 // 🔔 Send Night Path Notification (secured)
-app.post("/send-night-pathNew", authorizeWorker, async (req, res) => {
-  const channelId = "bhg_path_night_channel"; // ✅ corrected channelId
+app.post("/send-night-path", authorizeWorker, async (req, res) => {
+  const channelId = "bhg_path_night_channel"; 
  const title = pathNightTitles[Math.floor(Math.random() * pathNightTitles.length)];
   const body = pathNightBodies[Math.floor(Math.random() * pathNightBodies.length)];
 
   const message = {
     notification: { title, body },
     android: {
-      notification: { channelId, sound: "default" } // ✅ fixed channelId
+      notification: { channelId, sound: "default" } 
     },
     apns: {
       payload: {
@@ -278,9 +278,9 @@ app.post("/send-night-pathNew", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "pathnight" // ✅ fixed destination
+      destination: "path"
     },
-    topic: "path-night" // ✅ corrected topic
+    topic: "daily-path-night" 
   };
 
   try {
@@ -298,7 +298,7 @@ app.post("/send-night-pathNew", authorizeWorker, async (req, res) => {
 
 
 // 🔔 Send Notification To Specific Device Token (secured)
-app.post("/send-notification", authorizeWorker, async (req, res) => {
+app.post("/send-test-notification-with-token", authorizeWorker, async (req, res) => {
   const { token, title, body, data } = req.body;
 
   if (!token || !title || !body) {
@@ -321,7 +321,7 @@ app.post("/send-notification", authorizeWorker, async (req, res) => {
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, message: "Notification sent", response });
+    res.status(200).json({ success: true, message: "Test Notification Sent", response });
   } catch (err) {
     console.error("FCM Error (token):", err);
     res.status(500).json({ success: false, error: err.message });
@@ -332,7 +332,7 @@ app.post("/send-notification", authorizeWorker, async (req, res) => {
 
 
 // 🔔 Send Hukamnama Notification To Specific Device Token (secured)
-app.post("/send-hukamnama-token", authorizeWorker, async (req, res) => {
+app.post("/send-test-notification-token-with-destination", authorizeWorker, async (req, res) => {
   const { token } = req.body;
 
   if (!token) {
@@ -348,7 +348,7 @@ app.post("/send-hukamnama-token", authorizeWorker, async (req, res) => {
     android: {
       notification: {
         sound: "default",
-        channelId: "bhg_hukamnama_channel", 
+        channelId: "bhg_general_channel", 
       }
     },
     apns: {
@@ -357,7 +357,7 @@ app.post("/send-hukamnama-token", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "profile"
+      destination: "feed"
     }
   };
 
