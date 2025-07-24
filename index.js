@@ -357,7 +357,7 @@ app.post("/send-hukamnama-token", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "hukamnama"
+      destination: "path"
     }
   };
 
