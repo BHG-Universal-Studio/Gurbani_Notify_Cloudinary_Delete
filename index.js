@@ -215,8 +215,9 @@ app.post("/send-path", authorizeWorker, async (req, res) => {
       }
     },
     data: {
-      destination: "pathradio" 
-    },
+  destination: "pathradio",
+  playSpecial: "true"
+},
     topic: "daily-path" 
   };
 
