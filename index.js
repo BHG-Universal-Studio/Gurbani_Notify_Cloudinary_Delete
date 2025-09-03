@@ -372,7 +372,9 @@ app.post("/send-test-notification-token-with-destination", authorizeWorker, asyn
 });
 
 
-app.post("/notify-admin-post", authorizeWorker, async (req, res) => {
+
+
+app.post("/notify-admin-post", async (req, res) => {
   const { title, body } = req.body;
 
   const message = {
