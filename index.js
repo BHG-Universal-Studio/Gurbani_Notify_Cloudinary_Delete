@@ -372,6 +372,39 @@ app.post("/send-test-notification-token-with-destination", authorizeWorker, asyn
 });
 
 
+app.post("/notify-admin-post", authorizeWorker, async (req, res) => {
+  const { title, body } = req.body;
+
+  const message = {
+    notification: {
+      title: title || "📝 New Post Submitted",
+      body: body || "A user submitted a new post for review."
+    },
+    android: {
+      notification: { channelId: "bhg_admin_channel", sound: "default" }
+    },
+    apns: {
+      payload: {
+        aps: { sound: "default" }
+      }
+    },
+    data: {
+      type: "newPost",
+      playSpecial: "true"
+    },
+    topic: "admin-app"
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, message: "✅ Admin notified of new post", response });
+  } catch (err) {
+    console.error("FCM Error (notify-admin-post):", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 
 
 
