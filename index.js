@@ -374,16 +374,33 @@ app.post("/send-test-notification-token-with-destination", authorizeWorker, asyn
 
 
 
+
+
+
+const adminNotificationTitle = [
+  "📝 New Post Received",
+  "📝 New Post Submitted"
+];
+
+const adminNotificationBody = [
+  "A user submitted a new post for review.",
+  "A user submitted a new post for review checking."
+];
+
+
+
+
+// post admin Notification
+
 app.post("/notify-admin-post", async (req, res) => {
-  const { title, body } = req.body;
+  const channelId = "bhg_admin_channel"; 
+  const title = adminNotificationTitle[Math.floor(Math.random() * adminNotificationTitle.length)];
+  const body = adminNotificationBody[Math.floor(Math.random() * adminNotificationBody.length)];
 
   const message = {
-    notification: {
-      title: title || "📝 New Post Submitted",
-      body: body || "A user submitted a new post for review."
-    },
+    notification: { title, body },
     android: {
-      notification: { channelId: "bhg_admin_channel", sound: "default" }
+      notification: { channelId, sound: "default" } 
     },
     apns: {
       payload: {
@@ -391,17 +408,16 @@ app.post("/notify-admin-post", async (req, res) => {
       }
     },
     data: {
-      type: "newPost",
-      playSpecial: "true"
+      destination: ""
     },
-    topic: "admin-app"
+    topic: "admin-app" 
   };
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, message: "✅ Admin notified of new post", response });
+    res.status(200).json({ success: true, message: "Post Notification sent", response });
   } catch (err) {
-    console.error("FCM Error (notify-admin-post):", err);
+    console.error("FCM Error (notification):", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
