@@ -408,7 +408,7 @@ app.post("/notify-admin-post", async (req, res) => {
       }
     },
     data: {
-      destination: ""
+      destination: "admin"
     },
     topic: "admin-app" 
   };
