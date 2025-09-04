@@ -397,21 +397,21 @@ app.post("/notify-admin-post", async (req, res) => {
   const title = adminNotificationTitle[Math.floor(Math.random() * adminNotificationTitle.length)];
   const body = adminNotificationBody[Math.floor(Math.random() * adminNotificationBody.length)];
 
-  const message = {
-    notification: { title, body },
-    android: {
-      notification: { channelId, sound: "default" } 
-    },
-    apns: {
-      payload: {
-        aps: { sound: "default" }
-      }
-    },
-    data: {
-      destination: "admin"
-    },
-    topic: "admin-app" 
-  };
+const message = {
+  android: {
+    notification: { channelId, sound: "default" }
+  },
+  apns: {
+    payload: { aps: { sound: "default" } }
+  },
+  data: {
+    title,
+    body,
+    destination: "admin"
+  },
+  topic: "admin-app"
+};
+
 
   try {
     const response = await admin.messaging().send(message);
