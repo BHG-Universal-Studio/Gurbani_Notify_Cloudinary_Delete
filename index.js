@@ -161,38 +161,35 @@ app.post("/send-hukamnama", authorizeWorker, async (req, res) => {
 const pathTitles = [
   "🕯️ Blessed Evening – Rehras Sahib Awaits",
   "🌇 Rehras Sahib Ji – Evening Simran Time",
-  "🕯️ ਸਿਮਰਨ ਦੀ ਸ਼ਾਮ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਵਿੱਚ ਜੁੜੋ",
-  "🪔 Time for Rehras Sahib Ji – Peaceful Vela",
+  "🪔 Time for Rehras Sahib Ji – Peaceful Time",
   "🌆 Rehras Sahib Ji – Light Up Your Evening with Naam",
-  "🛐 ਸ਼ਾਮ ਦੀ ਅਰਦਾਸ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਦੀ ਬਾਣੀ",
+  "🛐 Shaam Di Ardaas – Rehras Sahib Ji Di Baani",
   "🛐 Evening Ardas – Rehras Sahib Ji Di Bani",
-  "🙏 ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ – ਇੱਕ ਸ਼ਾਂਤੀ ਭਰੀ ਸ਼ਾਮ ਲਈ",
   "🙏 Rehras Sahib Ji – Ik Shanti Bhari Shaam Layi",
-  "🕯️ Simran Di Shaam – Rehras Sahib Vich Judo",
+  "🕯️ Simran Di Shaam – Rehras Sahib Ji Naal Judo",
   "🌙 Guru Di Roshni – Rehras Sahib Ji Da Samah",
-    "🕯️ ਬਰਕਤ ਭਰੀ ਸ਼ਾਮ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਉਡੀਕ ਰਹੇ ਨੇ",
-  "🌇 ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ – ਸ਼ਾਮ ਦਾ ਸਿਮਰਨ ਸਮਾਂ",
-  "🪔 ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਦਾ ਵੇਲਾ – ਸ਼ਾਂਤਮਈ ਸ਼ਾਮ",
-  "🌆 ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ – ਨਾਮ ਨਾਲ ਆਪਣੀ ਸ਼ਾਮ ਰੋਸ਼ਨ ਕਰੋ",
-  "🌙 ਗੁਰੂ ਦੀ ਰੋਸ਼ਨੀ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਦਾ ਸਮਾਂ"
+  "🌇 Rehras Sahib Ji – Shaam Da Simran Samah",
+  "🪔 Rehras Sahib Ji Da Vela – Shaantmai Shaam",
+  "🌆 Rehras Sahib Ji – Naam Naal Apni Shaam Roshan Karo",
+  "🌙 Guru Di Roshni – Rehras Sahib Ji Da Samah"
 ];
 
 
 const pathBodies = [
   "It’s time to connect with the Divine. Let Rehras Sahib Ji calm your soul. 🌆",
-  "ਨਾਮ ਸਿਮਰਨ ਵਿਚ ਇੱਕ ਸ਼ਾਂਤ ਸ਼ਾਮ ਬਿਤਾਓ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਦਾ ਸਮਾਂ ਆ ਗਿਆ। 🪔",
-  "ਸ਼ਾਮ ਨੂੰ ਗੁਰੂ ਦੀ ਯਾਦ ਵਿਚ ਸਮਾਪਤ ਕਰੋ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਤੋਂ ਵੱਡੀ ਦਾਤ ਕੋਈ ਨਹੀਂ। ✨",
+  "Naam Simran vich ik shaant shaam bitao – Rehras Sahib Ji da samah aa gaya. 🪔",
+  "Shaam nu Guru di yaad vich samaapti karo – Rehras Sahib Ji ton vaddi daat koi nahi. ✨",
   "Rehras Sahib Ji di bani naal shaam nu Guru de naal bitaiye. Shanti mehsoos karo. 🙏🪔",
-  "Shaam da samah, Naam Simran da samah. Rehras Sahib Ji sun ke man nu chain milu. 🌇",
+  "Shaam da samah, Naam Simran da samah. Rehras Sahib Ji sun ke maan nu shanti milu. 🌇",
   "Guru Sahib Ji di roshni naal apni shaam roshan karo. Rehras Sahib Ji da paath kar lao. 🕯️",
-  "Aaj di shaam nu pavittar banao. Rehras Sahib Ji vich Guru naal judo. 🌅",
-  "ਗੁਰੂ ਸਾਹਿਬ ਜੀ ਦੀ ਰੋਸ਼ਨੀ ਨਾਲ ਆਪਣੀ ਸ਼ਾਮ ਰੋਸ਼ਨ ਕਰੋ। ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਦਾ ਪਾਠ ਕਰ ਲਵੋ। 🕯️",
-  "ਅੱਜ ਦੀ ਸ਼ਾਮ ਨੂੰ ਪਵਿੱਤਰ ਬਣਾ ਲਵੋ। ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਵਿਚ ਗੁਰੂ ਨਾਲ ਜੁੜੋ। 🌅",
-  "Shaam di mehar – Rehras Sahib Ji sun ke man di thakan door karo. 🌙",
+  "Aaj di shaam nu pavittar banao. Rehras Sahib Ji naal Guru naal judo. 🌅",
+  "Guru Sahib Ji di roshni naal apni shaam roshan karo. Rehras Sahib Ji da paath kar lo. 🕯️",
+  "Aaj di shaam nu pavittar bana lo. Rehras Sahib Ji vich Guru naal judo. 🌅",
+  "Shaam di mehar – Rehras Sahib Ji sun ke maan di thakan door karo. 🌙",
   "Sukhmani da raah shaam vich Rehras Sahib Ji de shabad naal. 🛐",
   "Naam Simran vich ik shaant shaam bitao – Rehras Sahib Ji da samah aa gaya. 🪔",
-  "ਸ਼ਾਮ ਦੀ ਮਿਹਰ – ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਸੁਣ ਕੇ ਮਨ ਦੀ ਥਕਾਵਟ ਦੂਰ ਕਰੋ। 🌙",
-  "ਸੁਖਮਨੀ ਦਾ ਰਾਹ ਸ਼ਾਮ ਵਿਚ ਰਹਿਰਾਸ ਸਾਹਿਬ ਜੀ ਦੇ ਸ਼ਬਦ ਨਾਲ। 🛐",
+  "Shaam di mehar – Rehras Sahib Ji sun ke maan di thakavat door karo. 🌙",
+  "Sukhmani da raah shaam vich Rehras Sahib Ji de shabad naal. 🛐",
   "Shaam nu Guru di yaad vich samaapti karo – Rehras Sahib Ji ton vaddi daat koi nahi. ✨"
 ];
 
@@ -240,23 +237,24 @@ app.post("/send-path", authorizeWorker, async (req, res) => {
 const pathNightTitles = [
   "🌙 Sohila Sahib – Peaceful Night Prayer",
   "🌙 Kirtan Sohila – End Your Day with Simran",
-   "🌙 ਸੋਹਿਲਾ ਸਾਹਿਬ – ਰਾਤ ਦੀ ਸ਼ਾਂਤੀਮਈ ਅਰਦਾਸ",
-  "🌙 ਕੀਰਤਨ ਸੋਹਿਲਾ – ਦਿਨ ਦੀ ਸਮਾਪਤੀ ਸਿਮਰਨ ਨਾਲ",
-  "🌌 ਰਾਤ ਦੀ ਰਹਿਮਤ – ਸੋਹਿਲਾ ਸਾਹਿਬ ਹਾਜ਼ਿਰ ਹੈ",
+  "🌙 Sohila Sahib – Raat Di Shaantimayi Ardaas",
+  "🌙 Kirtan Sohila – Din Di Samaapti Simran Naal",
+  "🌌 Raat Di Rehmat – Sohila Sahib Haazir Hai",
   "🕯️ Kirtan Sohila Sahib Ji – Soothing Shabad for Sleep",
-  "🕯️ ਕੀਰਤਨ ਸੋਹਿਲਾ ਸਾਹਿਬ ਜੀ – ਨੀਂਦ ਲਈ ਸੁਹਾਵਣੇ ਸ਼ਬਦ",
+  "🕯️ Kirtan Sohila Sahib Ji – Neend Layi Suhaavne Shabad",
   "🌌 Nighttime Blessing – Sohila Sahib awaits"
 ];
 
+
+
 const pathNightBodies = [
   "Sohila Sahib di bani naal raat nu. Guru Sahib de shabad sun ke sukoon pao. 🌙🙏",
-  "ਸੋਹਿਲਾ ਸਾਹਿਬ ਦੀ ਬਾਣੀ ਨਾਲ ਰਾਤ ਨੂੰ ਚੈਨ ਮਿਲਦਾ ਹੈ। ਗੁਰੂ ਸਾਹਿਬ ਦੇ ਸ਼ਬਦ ਸੁਣੋ ਤੇ ਸੁਕੂਨ ਪਾਓ। 🌙🙏",
-  "ਸੋਹਿਲਾ ਸਾਹਿਬ – ਗੁਰੂ ਦੇ ਨਾਲ ਦਿਨ ਦੀ ਸ਼ਾਂਤ ਸਮਾਪਤੀ। ਸ਼ਾਂਤੀ ਤੁਹਾਨੂੰ ਘੇਰ ਲਵੇ। 🛏️",
-  "ਕੀਰਤਨ ਸੋਹਿਲਾ ਸਾਹਿਬ – ਅੱਜ ਦੀ ਰਾਤ ਗੁਰੂ ਦੇ ਚਰਣਾ ਵਿਚ ਸਮਰਪਿਤ ਕਰੋ। 🛐",
+  "Sohila Sahib di bani naal raat nu chain milda hai. Guru Sahib de shabad suno te sukoon pao. 🌙🙏",
+  "Sohila Sahib – Guru de naal din di shaant samaapti. Shaanti tuhanu gher leve. 🛏️",
+  "Kirtan Sohila Sahib – Aaj di raat Guru de charna vich samarpat karo. 🛐",
   "Sohila Sahib – Guru de naal din di samapti. Let peace surround you. 🛏️",
   "Before you sleep, connect with the Divine. Sohila Sahib will bring calm to your mind. 🌌🕯️",
-  "ਸੌਣ ਤੋਂ ਪਹਿਲਾਂ ਗੁਰੂ ਨਾਲ ਜੁੜੋ। ਸੋਹਿਲਾ ਸਾਹਿਬ ਮਨ ਨੂੰ ਠੰਡਕ ਦੇਵੇਗਾ। 🌌🕯️",
-  "Kirtan Sohila Sahib – Aaj di raat Guru de charna vich samaapti karo. 🛐"
+  "Saun ton pehla Guru naal judo. Sohila Sahib maan nu shaanti milu. 🌌🕯️"
 ];
 
 
