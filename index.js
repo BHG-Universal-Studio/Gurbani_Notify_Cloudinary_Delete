@@ -99,7 +99,6 @@ const hukamTitles = [
 
 
 
-
 const hukamBodies = [
   "Amrit Vele di mehar naal aaj da pavittar Hukamnama hazir hai.",
   "Apni rooh nu Guru Sahib Ji de bachan naal jagaayiye. 🌅",
@@ -118,7 +117,7 @@ const hukamBodies = [
   "ਇੱਕ ਵਾਰ ਗੁਰੂ ਦਾ ਬਚਨ ਸੁਣ ਲਓ – ਮਨ ਦੀਆਂ ਉਲਝਣਾਂ ਹੱਲ ਹੋ ਜਾਣ। ਅੱਜ ਦਾ ਹੁਕਮ ਜੀਵਨ ਨੂੰ ਰੋਸ਼ਨ ਕਰੇ। 🕯️",
   "Guru Sahib da aadesh – ik vadiya raah hai jeevan layi. Is hukam vich hai shanti, gyaan te pyar. 🙏📖",
   "Amrit Vele di roshni vich Guru Sahib da pavittar hukam aagaya hai. Apne din di shuruaat Guru de ashirwad naal karo. 🌸🙏",
-  "Shri Guru Granth Sahib Ji ne aaj vi apna bachan bakshia hai. Vekho, ki Guru ne kehna hai Sade layi aaj. 🙏✨",
+  "Sri Guru Granth Sahib Ji ne aaj vi apna bachan bakshia hai. Vekho, ki Guru ne keha hai Sade layi aaj. 🙏✨",
   "Amrit Vele da samah vakhri barkat leke aaya hai. Aaj da hukam padho, te apne din nu Guru de naal jodo. 🌞📜",
   "Har subah di sab ton vaddi daat – Guru da hukamnama. Ajj di kirpa nu miss na karo. 🌼✨",
   "Waheguru Ji ne aaj vi apne sevak layi sandesh bhejiya hai. Aao, us pavittar bachan nu padhiye. 📜🌞",
