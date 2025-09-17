@@ -56,43 +56,49 @@ app.post("/delete", async (req, res) => {
   }
 });
 
-// 🧠 Hukamnama Messages
+
 const hukamTitles = [
-  "Amrit Vele da Hukamnama Sahib Ji",
-  "Waheguru Ji da aadesh – Aaj da Hukamnama",
-  "Aaj da pavittar Hukamnama hazir hai",
-  "Guru Sahib di kirpa naal hukam prapat hoya hai",
-  "Amrit Vela – Guru da bachan mil gaya ji",
-  "Navi subah, navey ashirwad – Hukamnama suno",
-  "Sehaj vich vaso – Aaj da hukam aagaya ji",
-  "Satguru da hukum – Amrit Vele di mehar",
-  "Shuru karo din Guru de bachan naal",
-  "Waheguru di reham – Aaj da hukam suno",
-  "Satnam Waheguru Ji – Aaj da Hukam mila hai",
-  "Hukamnama Sahib Ji – Guru Sahiban Ji di roshni",
-  "ਅੰਮ੍ਰਿਤ ਵੇਲੇ ਦਾ ਹੁਕਮਨਾਮਾ ਸਾਹਿਬ ਜੀ",
-  "ਵਾਹਿਗੁਰੂ ਜੀ ਦਾ ਆਦੇਸ਼ – ਅੱਜ ਦਾ ਹੁਕਮਨਾਮਾ",
-  "ਅੱਜ ਦਾ ਪਵਿੱਤਰ ਹੁਕਮਨਾਮਾ ਹਾਜ਼ਰ ਹੈ",
-  "ਗੁਰੂ ਸਾਹਿਬ ਦੀ ਕਿਰਪਾ ਨਾਲ ਹੁਕਮ ਪ੍ਰਾਪਤ ਹੋਇਆ ਹੈ",
-  "ਅੰਮ੍ਰਿਤ ਵੇਲਾ – ਗੁਰੂ ਦਾ ਬਚਨ ਮਿਲ ਗਿਆ ਜੀ",
-  "Aaj vi Guru Sahib Ji ne kirpa kiti – Hukam tyar hai",
-  "ਨਵੀਂ ਸਵੇਰ, ਨਵੇਂ ਅਸੀਸ – ਹੁਕਮਨਾਮਾ ਸੁਣੋ",
-  "ਸਹਿਜ ਵਿਚ ਵਸੋ – ਅੱਜ ਦਾ ਹੁਕਮ ਆ ਗਿਆ ਜੀ",
-  "ਸਤਿਗੁਰੂ ਦਾ ਹੁਕਮ – ਅੰਮ੍ਰਿਤ ਵੇਲੇ ਦੀ ਮਿਹਰ",
-  "ਗੁਰੂ ਦੇ ਬਚਨ ਨਾਲ ਦਿਨ ਦੀ ਸ਼ੁਰੂਆਤ ਕਰੋ",
-  "ਵਾਹਿਗੁਰੂ ਦੀ ਰਹਿਮ – ਅੱਜ ਦਾ ਹੁਕਮ ਸੁਣੋ",
-  "Rooh di roti – Amrit Vele da hukam prapt karo",
-  "ਹੁਕਮਨਾਮਾ ਸਾਹਿਬ ਜੀ – ਗੁਰੂ ਸਾਹਿਬਾਨ ਜੀ ਦੀ ਰੋਸ਼ਨੀ",
-  "ਅੱਜ ਵੀ ਗੁਰੂ ਸਾਹਿਬ ਜੀ ਨੇ ਕਿਰਪਾ ਕੀਤੀ – ਹੁਕਮ ਤਿਆਰ ਹੈ",
-  "ਰੂਹ ਦੀ ਰੋਟੀ – ਅੰਮ੍ਰਿਤ ਵੇਲੇ ਦਾ ਹੁਕਮ ਪ੍ਰਾਪਤ ਕਰੋ",
-  "ਸਤਿਨਾਮ ਵਾਹਿਗੁਰੂ ਜੀ – ਅੱਜ ਦਾ ਹੁਕਮ ਮਿਲਿਆ ਹੈ",
-  "ਅੱਜ ਦਾ ਹੁਕਮਨਾਮਾ 📜 ਵਾਹਿਗੁਰੂ ਜੀ 🙏",
-  "Aaj Da Hukamnama 📜 Waheguru Ji 🙏"
-  
-  
-  
-  
+  "📜 Hukamnama Sahib Ji – Amrit Vele di shuruaat",
+  "🌅 Hukamnama Sahib Ji – Aaj da bachan Sri Guru Granth Sahib Ji ton",
+  "🙏 Hukamnama Sahib Ji – Waheguru Ji di kirpa naal",
+  "🌟 Aaj da Hukamnama Sahib Ji – Satguru di roshni vich",
+  "🌞 Hukamnama Sahib Ji – Din di shuruaat Guru de bachan naal",
+  "📿 Aaj da pavittar Hukamnama Sahib Ji prapt hoya hai",
+  "🙌 Hukamnama Sahib Ji – Aaj vi Guru Ji ne kirpa kiti",
+  "🌸 Aaj da Hukamnama Sahib Ji – Rooh di shanti layi",
+  "💫 Amrit Vele da Hukamnama Sahib Ji – Satnam Waheguru",
+  "🕊️ Hukamnama Sahib Ji – Waheguru Ji da aadesh aaya hai",
+  "🌅 Hukamnama Sahib Ji – Nayi subah, naye ashirwaad",
+  "📖 Aaj da Hukamnama Sahib Ji – Sri Guru Granth Sahib Ji di bani",
+  "✨ Hukamnama Sahib Ji – Aaj da sandesh Satguru ton",
+  "🌅 Amrit Vele da Hukamnama Sahib Ji",
+  "💫 Aaj da Hukamnama - Waheguru Ji da aadesh",
+  "🌸 Aaj da pavittar Hukamnama hazir hai",
+  "🙌 Guru Sahib di kirpa naal hukumnama prapt hoya hai",
+  "🌞 Hukamnama Amrit Vela – Guru da bachan mil gaya ji",
+  "🌅 Hukamnama Sahib – Nayi subah, naye ashirwaad",
+  "💖 Sehaj mein vaso – Aaj da hukamnama aa gaya ji",
+  "🌸 Satguru da hukumnama – Amrit Vele di mehar",
+  "🌞 Hukamnama Sahib – Din di shuruaat Guru de bachan de naal",
+  "🙏 Waheguru Ji di reham – Aaj da hukumnama suniye",
+  "🌸 Satnam Waheguru Ji – Aaj da hukumnama mila hai",
+  "🌟 Hukamnama Sahib Ji – Guru Sahiban Ji di roshni",
+  "🙏 Hukamnama Sahib Ji - Aaj bhi Guru Sahib Ji ne kirpa kiti",
+  "🌅 Nayi subah, naye hukam – Hukamnama suniye",
+  "🌞 Hukamnama Sahib Ji - Guru de bachan naal din di shuruaat kro",
+  "🙏 Waheguru Ji di rehmat – Aaj da hukamnama suniye",
+  "🌸 Rooh di roti – Hukamnama Amrit Vele da",
+  "📜 Waheguru Ji 🙏 Aaj da Hukamnama Sahib",
+  "🙏 Aaj da Hukamnama Sahib Ji – Waheguru di mehar naal",
+  "🌸 Satguru da aadesh – Hukamnama Sahib Ji tayar hai",
+  "🌞 Hukamnama Sahib Ji – Shuruaat karo Guru de naal",
+  "🌟 Hukamnama Sahib Ji – Aaj da ashirwad suno",
+  "📜 Aaj da Hukamnama Sahib Ji – Roohani marg di roshni",
+  "🧡 Hukamnama Sahib Ji – Satnam Waheguru Ji da updesh"
 ];
+
+
+
 
 const hukamBodies = [
   "Amrit Vele di mehar naal aaj da pavittar Hukamnama hazir hai.",
