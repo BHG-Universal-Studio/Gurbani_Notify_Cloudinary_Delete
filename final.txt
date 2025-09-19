@@ -1,0 +1,1261 @@
+package com.BHG.gurbani
+
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.*
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+import android.media.MediaScannerConnection
+import android.net.Uri
+import android.provider.Settings
+
+import android.os.*
+import android.provider.MediaStore
+import android.util.TypedValue
+import android.view.*
+import kotlinx.coroutines.*
+
+import android.widget.*
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.navigation.Navigation
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.*
+import okhttp3.*
+import java.io.*
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.navigation.findNavController
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
+import androidx.core.view.WindowCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
+
+class PostAdapter(private val postList: MutableList<Post>) :
+    RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
+
+
+
+
+
+    private val userInfoCache = mutableMapOf<String, CachedUserInfo>()
+    private val postHeights = mutableMapOf<String, Int>() // key = postId
+
+
+    fun clearUserInfoCache() {
+        userInfoCache.clear()
+    }
+
+
+
+
+    inner class PostViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val profileImage: ImageView = itemView.findViewById(R.id.user_profile_image)
+        val userName: TextView = itemView.findViewById(R.id.full_name_user)
+        val postTime: TextView = itemView.findViewById(R.id.post_time)
+
+        val caption: TextView = itemView.findViewById(R.id.post_caption)
+        val likeButton: ImageButton = itemView.findViewById(R.id.like_button)
+        val whatsappButton: ImageButton = itemView.findViewById(R.id.whatsapp_button)
+        val shareButton: ImageButton = itemView.findViewById(R.id.share_button)
+        val shareCount: TextView = itemView.findViewById(R.id.share_count)
+        val likeCount: TextView = itemView.findViewById(R.id.like_count)
+        val downloadButton: ImageButton = itemView.findViewById(R.id.download_button)
+        val deleteButton: ImageButton = itemView.findViewById(R.id.delete_button)
+        val progressBar: ProgressBar = itemView.findViewById(R.id.image_loading_progress)
+        val moreButton: ImageButton = itemView.findViewById(R.id.btnMore)
+        val verifiedBadge: ImageView = itemView.findViewById(R.id.verifiedBadge)
+        val seenCount: TextView = itemView.findViewById(R.id.seen_count)
+
+        val postImage: ImageView = itemView.findViewById(R.id.post_image)
+        val postVideo: PlayerView = itemView.findViewById(R.id.post_video)
+        val videoThumbnail: ImageView = itemView.findViewById(R.id.video_thumbnail)
+        val videoProgress: ProgressBar = itemView.findViewById(R.id.video_progress)
+
+
+        var player: ExoPlayer? = null
+
+        fun playVideo(post: Post) {
+            if (player == null) {
+                postVideo.visibility = View.VISIBLE
+                videoThumbnail.visibility = View.VISIBLE
+                videoProgress.visibility = View.VISIBLE
+
+                player = ExoPlayer.Builder(itemView.context).build().also { exoPlayer ->
+                    postVideo.player = exoPlayer
+                    val mediaItem = MediaItem.fromUri(post.imageUrl)
+                    exoPlayer.setMediaItem(mediaItem)
+                    exoPlayer.prepare()
+                    exoPlayer.playWhenReady = true
+
+                    exoPlayer.addListener(object : Player.Listener {
+                        override fun onPlaybackStateChanged(state: Int) {
+                            if (state == Player.STATE_READY) {
+                                videoProgress.visibility = View.GONE
+                                videoThumbnail.visibility = View.GONE
+                            }
+                        }
+                    })
+                }
+            }
+        }
+
+
+        fun releasePlayer() {
+            player?.release()
+            player = null 
+            postVideo.player = null 
+
+            postVideo.visibility = View.GONE 
+            videoThumbnail.visibility = View.VISIBLE 
+            videoProgress.visibility = View.GONE 
+        }
+
+
+
+
+
+
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_post, parent, false)
+        return PostViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
+        val post = postList[position]
+        val context = holder.itemView.context
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        holder.userName.text = post.userName
+        holder.postTime.text = getRelativeTime(post.timestamp)
+
+        // Caption
+        if (post.caption?.isBlank() != false) {
+            holder.caption.visibility = View.GONE
+        } else {
+            holder.caption.text = post.caption
+            holder.caption.visibility = View.VISIBLE
+        }
+
+        // Profile info (cached or fetched)
+        val cachedInfo = userInfoCache[post.postedBy]
+        if (cachedInfo != null) {
+            holder.userName.text = cachedInfo.username
+            holder.verifiedBadge.visibility = if (cachedInfo.isVerified) View.VISIBLE else View.GONE
+            Glide.with(context)
+                .load(cachedInfo.profileImage.ifEmpty { R.drawable.ic_user })
+                .placeholder(R.drawable.ic_user)
+                .circleCrop()
+                .into(holder.profileImage)
+        } else {
+            db.collection("users").document(post.postedBy).get()
+                .addOnSuccessListener { doc ->
+                    val username = doc.getString("fullName") ?: "user"
+                    val profileImage = doc.getString("profileImage") ?: ""
+                    val verified = (doc.getString("isVerified") ?: "no") == "yes"
+
+                    userInfoCache[post.postedBy] = CachedUserInfo(username, profileImage, verified)
+
+                    holder.userName.text = username
+                    holder.verifiedBadge.visibility = if (verified) View.VISIBLE else View.GONE
+                    Glide.with(context)
+                        .load(profileImage.ifEmpty { R.drawable.ic_user })
+                        .placeholder(R.drawable.ic_user)
+                        .circleCrop()
+                        .into(holder.profileImage)
+                }
+                .addOnFailureListener {
+                    holder.userName.text = "Name"
+                    holder.verifiedBadge.visibility = View.GONE
+                    Glide.with(context)
+                        .load(R.drawable.ic_user)
+                        .circleCrop()
+                        .into(holder.profileImage)
+                }
+        }
+
+        // Always load profile image again (fallback)
+        Glide.with(context)
+            .load(post.userProfileImage.ifEmpty { R.drawable.ic_user })
+            .placeholder(R.drawable.ic_user)
+            .circleCrop()
+            .into(holder.profileImage)
+
+        // ✅ Handle IMAGE (default if mediaType is null) or VIDEO
+        if (post.mediaType == null || post.mediaType.equals("Image", ignoreCase = true)) {
+            // ---- IMAGE HANDLING ----
+            holder.postImage.visibility = View.VISIBLE
+            holder.postVideo.visibility = View.GONE
+            holder.videoThumbnail.visibility = View.GONE
+            holder.videoProgress.visibility = View.GONE
+
+            holder.progressBar.visibility = View.VISIBLE
+            Glide.with(context)
+                .asBitmap()
+                .load(post.imageUrl)
+                .into(object : com.bumptech.glide.request.target.CustomTarget<Bitmap>() {
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: com.bumptech.glide.request.transition.Transition<in Bitmap>?
+                    ) {
+                        holder.progressBar.visibility = View.GONE
+
+                        val imageWidth = resource.width
+                        val imageHeight = resource.height
+                        val aspectRatio = imageHeight.toFloat() / imageWidth
+                        val screenWidth = holder.postImage.width.takeIf { it > 0 }
+                            ?: holder.postImage.resources.displayMetrics.widthPixels
+                        val calculatedHeight = (screenWidth * aspectRatio).toInt()
+
+                        val maxHeightPx = TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_DIP, 600f,
+                            holder.postImage.resources.displayMetrics
+                        ).toInt()
+
+                        val finalHeight = calculatedHeight.coerceAtMost(maxHeightPx)
+                        holder.postImage.scaleType = ImageView.ScaleType.CENTER_CROP
+                        holder.postImage.setImageBitmap(resource)
+
+                        val params = holder.postImage.layoutParams
+                        params.height = finalHeight
+                        holder.postImage.layoutParams = params
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {
+                        holder.progressBar.visibility = View.GONE
+                    }
+                })
+
+        }
+
+        else if (post.mediaType.equals("Video", true)) {
+            holder.postImage.visibility = View.GONE
+            holder.postVideo.visibility = View.GONE
+            holder.videoThumbnail.visibility = View.VISIBLE
+            holder.progressBar.visibility = View.VISIBLE
+
+            Glide.with(context)
+                .asBitmap()
+                .load(post.thumbnailUrl)
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        holder.progressBar.visibility = View.GONE
+
+                        val screenWidth = holder.videoThumbnail.width.takeIf { it > 0 }
+                            ?: holder.videoThumbnail.resources.displayMetrics.widthPixels
+                        val aspectRatio = resource.height.toFloat() / resource.width
+                        val height = (screenWidth * aspectRatio).toInt()
+                        val maxHeightPx = TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_DIP, 600f, holder.videoThumbnail.resources.displayMetrics
+                        ).toInt()
+                        val finalHeight = height.coerceAtMost(maxHeightPx)
+
+                        holder.videoThumbnail.layoutParams.height = finalHeight
+                        holder.videoThumbnail.scaleType = ImageView.ScaleType.CENTER_CROP
+                        holder.videoThumbnail.setImageBitmap(resource)
+
+                        post.calculatedHeight = finalHeight // save height for player
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {}
+                })
+        }
+
+
+
+        // 👤 Profile click → navigate
+        holder.userName.setOnClickListener {
+            val bundle = Bundle().apply { putString("userId", post.postedBy) }
+            holder.itemView.findNavController().navigate(R.id.userProfileFragment, bundle)
+        }
+        holder.profileImage.setOnClickListener {
+            val bundle = Bundle().apply { putString("userId", post.postedBy) }
+            holder.itemView.findNavController().navigate(R.id.userProfileFragment, bundle)
+        }
+
+        // 🗑 Delete button
+        if (post.postedBy == userId) {
+            holder.deleteButton.visibility = View.VISIBLE
+            holder.deleteButton.setOnClickListener {
+                AlertDialog.Builder(context)
+                    .setTitle("Delete Post")
+                    .setMessage("Are you sure you want to delete this post?")
+                    .setPositiveButton("Delete") { _, _ ->
+                        val positionSafe = holder.adapterPosition
+                        if (positionSafe != RecyclerView.NO_POSITION) {
+                            db.collection("posts").document(post.postId).delete()
+                                .addOnSuccessListener {
+                                    postList.removeAt(positionSafe)
+                                    notifyItemRemoved(positionSafe)
+                                    db.collectionGroup("likedPosts")
+                                        .whereEqualTo("postId", post.postId)
+                                        .get()
+                                        .addOnSuccessListener { snaps ->
+                                            for (doc in snaps.documents) doc.reference.delete()
+                                        }
+                                    if (!post.publicId.isNullOrEmpty()) {
+                                        deleteFromCloudinary(post.publicId!!, context)
+                                    }
+                                    Toast.makeText(context, "Post deleted", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener {
+                                    Toast.makeText(context, "Failed to delete post", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        } else holder.deleteButton.visibility = View.GONE
+
+        // ❤️ Like button
+        val likedRef = db.collection("users").document(userId)
+            .collection("likedPosts").document(post.postId)
+        likedRef.get().addOnSuccessListener { snap ->
+            holder.likeButton.setImageResource(
+                if (snap.exists()) R.drawable.ic_like_filled else R.drawable.ic_like_unfilled
+            )
+        }
+
+
+
+
+        holder.likeButton.setOnClickListener {
+
+
+            val user = FirebaseAuth.getInstance().currentUser
+            if (user == null || user.isAnonymous) {
+                LoginRequiredDialog.show(context)
+            } else {
+
+
+
+
+
+                likedRef.get().addOnSuccessListener { snap ->
+                    val postRef = db.collection("posts").document(post.postId)
+                    if (snap.exists()) {
+                        likedRef.delete()
+                        postRef.update("likeCount", FieldValue.increment(-1))
+                        holder.likeButton.setImageResource(R.drawable.ic_like_unfilled)
+                    } else {
+                        likedRef.set(post)
+                        postRef.update("likeCount", FieldValue.increment(1))
+                        holder.likeButton.setImageResource(R.drawable.ic_like_filled)
+                    }
+                }
+
+            }
+        }
+
+        // Share and Like counts
+        db.collection("posts").document(post.postId).get()
+            .addOnSuccessListener { snap ->
+                val shareCount = snap.getLong("shareCount") ?: 0
+                val likeCount = snap.getLong("likeCount") ?: 0
+                val seenCount = snap.getLong("seenCount") ?: 0
+
+                holder.shareCount.text = if (shareCount > 0) formatCount(shareCount) else ""
+                holder.likeCount.text = if (likeCount > 0) formatCount(likeCount) else ""
+                holder.seenCount.text = if (seenCount > 0) "${formatCount(seenCount)} views " else ""
+
+            }
+
+
+        // Share + WhatsApp
+        holder.whatsappButton.setOnClickListener {
+            shareImage(context, post.imageUrl, true, post.postId)
+        }
+        holder.shareButton.setOnClickListener {
+            shareImage(context, post.imageUrl, false, post.postId)
+        }
+
+
+        holder.moreButton.setOnClickListener {
+            val context = holder.itemView.context
+            val bottomSheet = BottomSheetDialog(context)
+            val view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_post_more, null)
+            bottomSheet.setContentView(view)
+
+            // --- Setup status and navigation bar colors like in showLogoutDialog() ---
+            val dialogWindow = bottomSheet.window
+            if (dialogWindow != null) {
+                WindowCompat.setDecorFitsSystemWindows(dialogWindow, false)
+
+                val isNightMode = (context.resources.configuration.uiMode and
+                        Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val insetsController = WindowCompat.getInsetsController(dialogWindow, dialogWindow.decorView)
+                    insetsController.isAppearanceLightStatusBars = !isNightMode
+                    insetsController.isAppearanceLightNavigationBars = !isNightMode
+                } else {
+                    @Suppress("DEPRECATION")
+                    dialogWindow.decorView.systemUiVisibility = if (!isNightMode) {
+                        View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                    } else {
+                        0
+                    }
+                }
+            }
+
+
+
+            // --- Close button ---
+            val closeButton = view.findViewById<ImageButton>(R.id.btnCloseBottomSheet)
+            closeButton.setOnClickListener {
+                bottomSheet.dismiss()
+            }
+
+            val reportButton = view.findViewById<TextView>(R.id.btnReportPost)
+            val copyrightButton = view.findViewById<TextView>(R.id.btnCopyright)
+
+            reportButton.setOnClickListener {
+
+                AlertDialog.Builder(context)
+                    .setTitle("Hide Post ")
+                    .setMessage("Are you sure you want to hide this post?")
+                    .setPositiveButton("Hide") { _, _ ->
+                        val userUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setPositiveButton
+                        val db = FirebaseFirestore.getInstance()
+
+                        val reportData = hashMapOf(
+                            "postId" to post.postId,
+                            "reportedBy" to userUid,
+                            "reportedAt" to FieldValue.serverTimestamp(),
+                            "postImageUrl" to post.imageUrl,
+                            "caption" to post.caption
+                        )
+
+                        db.collection("reported_posts")
+                            .add(reportData)
+
+                        // Save to this user's personal reported list
+                        db.collection("users").document(userUid)
+                            .collection("reportedPosts")
+                            .document(post.postId)
+                            .set(mapOf("postId" to post.postId))
+                            .addOnSuccessListener {
+                                // Now remove it from UI immediately
+                                val positionSafe = holder.adapterPosition
+                                if (positionSafe != RecyclerView.NO_POSITION) {
+                                    postList.removeAt(positionSafe)
+                                    notifyItemRemoved(positionSafe)
+                                }
+                                Toast.makeText(context, "Post reported and hidden", Toast.LENGTH_SHORT).show()
+                                bottomSheet.dismiss()
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(context, "Report saved but not hidden", Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+
+            }
+
+            copyrightButton.setOnClickListener {
+                bottomSheet.dismiss()
+                showReportDialog(holder.itemView.context, post.postId)
+            }
+
+
+
+
+            bottomSheet.show()
+        }
+
+
+
+
+        holder.downloadButton.setOnClickListener {
+            val context = holder.itemView.context
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                // Android < 10 requires storage permission
+                if (ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    if (context is Activity) {
+                        if (ActivityCompat.shouldShowRequestPermissionRationale(
+                                context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            )
+                        ) {
+                            // Show rationale before re-requesting
+                            AlertDialog.Builder(context)
+                                .setTitle("Storage Permission Required")
+                                .setMessage("We need permission to save images to your gallery.")
+                                .setPositiveButton("Allow") { _, _ ->
+                                    ActivityCompat.requestPermissions(
+                                        context,
+                                        arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                                        1001
+                                    )
+                                }
+                                .setNegativeButton("Cancel", null)
+                                .show()
+                        } else {
+                            // If user denied with "Don't ask again", show settings dialog
+                            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                            val deniedOnce = prefs.getBoolean("storage_denied_once", false)
+
+                            if (deniedOnce) {
+                                AlertDialog.Builder(context)
+                                    .setTitle("Enable Permission")
+                                    .setMessage("Storage permission is denied. Please enable it from app settings.")
+                                    .setPositiveButton("Open Settings") { _, _ ->
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                        intent.data = Uri.fromParts("package", context.packageName, null)
+                                        context.startActivity(intent)
+                                    }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
+                                return@setOnClickListener
+                            } else {
+                                // First denial – remember it
+                                prefs.edit().putBoolean("storage_denied_once", true).apply()
+                                ActivityCompat.requestPermissions(
+                                    context,
+                                    arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                                    1001
+                                )
+                            }
+                        }
+                    }
+                    Toast.makeText(context, "Please grant storage permission and try again.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+            }
+
+            // ✅ Proceed to download image
+            Glide.with(context).asBitmap().load(post.imageUrl)
+                .into(object : com.bumptech.glide.request.target.CustomTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: com.bumptech.glide.request.transition.Transition<in Bitmap>?) {
+                        val watermarked = addLogoOverlay(context, resource)
+                        saveImageWithLogoToGallery(context, watermarked)
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {}
+                })
+        }
+
+        val postRef = db.collection("posts").document(post.postId)
+        val seenRef = postRef.collection("seen").document(userId)
+
+        seenRef.get().addOnSuccessListener { doc ->
+            if (!doc.exists()) {
+                // First time this user is seeing the post
+                seenRef.set(mapOf("seenAt" to FieldValue.serverTimestamp()))
+                postRef.update("seenCount", FieldValue.increment(1))
+            }
+        }
+    }
+
+
+    override fun getItemCount(): Int = postList.size
+
+    private fun getRelativeTime(timestamp: Long): String {
+        val diff = System.currentTimeMillis() - timestamp
+        val mins = diff / 60000
+        val hours = mins / 60
+        val days = hours / 24
+        return when {
+            mins < 1 -> "Just now"
+            mins < 60 -> "$mins min ago"
+            hours < 24 -> "$hours hr ago"
+            days < 7 -> "$days days ago"
+            else -> SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(timestamp))
+        }
+    }
+
+
+
+    override fun onViewRecycled(holder: PostViewHolder) {
+        super.onViewRecycled(holder)
+        holder.releasePlayer()
+    }
+
+    private fun shareImage(context: Context, url: String, toWhatsApp: Boolean, postId: String) {
+        Glide.with(context).asBitmap().load(url)
+            .into(object : com.bumptech.glide.request.target.CustomTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: com.bumptech.glide.request.transition.Transition<in Bitmap>?) {
+                    val watermarked = addLogoOverlay(context, resource)
+                    val uri = saveBitmapToCache(context, watermarked)
+
+                    val shareText = """
+                    🙏 Waheguru Ji Ka Khalsa, Waheguru Ji Ki Fateh 🙏
+                    
+                    🌟 Listen to Gurbani, Path, Hukamnama and more on our Gurbani App.
+                    
+                    📲 Download Now: https://play.google.com/store/apps/details?id=com.BHG.gurbani
+                """.trimIndent()
+
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "image/*"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        putExtra(Intent.EXTRA_TEXT, shareText)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        if (toWhatsApp) setPackage("com.whatsapp")
+                    }
+
+                    context.startActivity(Intent.createChooser(intent, "Share Post"))
+
+                    FirebaseFirestore.getInstance().collection("posts")
+                        .document(postId).update("shareCount", FieldValue.increment(1))
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {}
+            })
+    }
+
+
+
+
+
+    data class CachedUserInfo(
+        val username: String,
+        val profileImage: String,
+        val isVerified: Boolean,
+
+        )
+
+
+    private fun saveBitmapToCache(context: Context, bitmap: Bitmap): Uri {
+        val cachePath = File(context.cacheDir, "images").apply { mkdirs() }
+        val file = File(cachePath, "shared_${System.currentTimeMillis()}.png")
+        FileOutputStream(file).use {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    }
+
+    private fun saveImageWithLogoToGallery(context: Context, bitmap: Bitmap) {
+        val filename = "Gurbani_${System.currentTimeMillis()}.jpg"
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // ✅ Android 10+ (Scoped storage)
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Gurbani")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+
+                val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+
+                uri?.let {
+                    context.contentResolver.openOutputStream(it)?.use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                    }
+
+                    values.clear()
+                    values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    context.contentResolver.update(it, values, null, null)
+
+                    Toast.makeText(context, "Saved to Gallery", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // ✅ Android 6–9 (Legacy storage)
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val appDir = File(picturesDir, "Gurbani")
+                if (!appDir.exists()) appDir.mkdirs()
+
+                val imageFile = File(appDir, filename)
+                FileOutputStream(imageFile).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+                }
+
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(imageFile.absolutePath),
+                    arrayOf("image/jpeg"),
+                    null
+                )
+
+                Toast.makeText(context, "Saved to Gallery", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error saving image: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+
+
+
+
+
+    private fun deleteFromCloudinary(publicId: String, context: Context) {
+        val client = OkHttpClient()
+        val requestBody = FormBody.Builder().add("public_id", publicId).build()
+        val request = Request.Builder()
+            .url("https://gurbani-app.onrender.com/delete")
+            .post(requestBody)
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(context, "Failed to delete from Cloudinary", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (!response.isSuccessful) {
+                    println("❌ Cloudinary delete failed: ${response.message}")
+                }
+            }
+        })
+    }
+
+
+
+    private fun addLogoOverlay(context: Context, original: Bitmap): Bitmap {
+        val logo = BitmapFactory.decodeResource(context.resources, R.drawable.logo_overlay)
+        val scaledLogo =
+            logo.scale(original.width / 6, logo.height * original.width / (6 * logo.width))
+
+        val result = createBitmap(
+            original.width,
+            original.height,
+            original.config ?: Bitmap.Config.ARGB_8888
+        )
+
+        val canvas = Canvas(result)
+        canvas.drawBitmap(original, 0f, 0f, null)
+
+        val padding = (original.width * 0.02).toInt()
+        val left = original.width - scaledLogo.width - padding
+        val top = padding
+
+        canvas.drawBitmap(scaledLogo, left.toFloat(), top.toFloat(), null)
+        return result
+    }
+
+    private fun showReportDialog(context: Context, postId: String) {
+        val bottomSheet = BottomSheetDialog(context)
+        val view = LayoutInflater.from(context).inflate(R.layout.bottom_copyright_sheet, null)
+        bottomSheet.setContentView(view)
+        expandBottomSheet(bottomSheet)
+
+        val radioGroup = view.findViewById<RadioGroup>(R.id.reportTypeGroup)
+        val reportText = view.findViewById<TextInputEditText>(R.id.reportText)
+        val btnSend = view.findViewById<Button>(R.id.btnSendReport)
+        val btnCancel = view.findViewById<Button>(R.id.btnCancel)
+        val progressBar = view.findViewById<ProgressBar>(R.id.saveProgressBar)
+
+        val warningText = view.findViewById<TextView>(R.id.guestWarning)
+        val nameLayout = view.findViewById<TextInputLayout>(R.id.nameBoxLayout)
+        val emailLayout = view.findViewById<TextInputLayout>(R.id.emailBoxLayout)
+        val fullName = nameLayout.editText
+        val email = emailLayout.editText
+
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val isGuest = currentUser == null || currentUser.isAnonymous
+
+        warningText.visibility = if (isGuest) View.VISIBLE else View.GONE
+        nameLayout.visibility = if (isGuest) View.VISIBLE else View.GONE
+        emailLayout.visibility = if (isGuest) View.VISIBLE else View.GONE
+
+        btnCancel.setOnClickListener { bottomSheet.dismiss() }
+
+        btnSend.setOnClickListener {
+            val selectedTypeId = radioGroup.checkedRadioButtonId
+            val reportType = when (selectedTypeId) {
+                R.id.typeCopyright -> "Copyright violation"
+                R.id.typePersonal -> "Personal content / privacy issue"
+                R.id.typeOther -> "Other"
+                else -> ""
+            }
+
+            if (reportType.isEmpty()) {
+                Toast.makeText(context, "Please select a report type", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val textWritten = reportText?.text?.toString()?.trim().orEmpty()
+            if (textWritten.isEmpty()) {
+                Toast.makeText(context, "Report message cannot be empty", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val guestName = fullName?.text?.toString()?.trim().orEmpty()
+            val guestEmail = email?.text?.toString()?.trim().orEmpty()
+
+            if (isGuest && (guestName.isEmpty() || guestEmail.isEmpty())) {
+                Toast.makeText(context, "Please provide your full name and email", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Show progress and hide buttons
+            btnSend.visibility = View.GONE
+            btnCancel.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+
+            sendReportToFirestore(
+                context, postId, reportType, textWritten,
+                if (isGuest) guestName else null,
+                if (isGuest) guestEmail else null,
+                onSuccess = {
+                    bottomSheet.dismiss()
+                    showReportReceivedDialog(context)
+                },
+                onFailure = {
+                    btnSend.visibility = View.VISIBLE
+                    btnCancel.visibility = View.VISIBLE
+                    progressBar.visibility = View.GONE
+                }
+            )
+        }
+
+
+        bottomSheet.show()
+    }
+
+    private fun sendReportToFirestore(
+        context: Context,
+        postId: String,
+        reportType: String,
+        textWritten: String,
+        guestName: String? = null,
+        guestEmail: String? = null,
+        onSuccess: (() -> Unit)? = null,
+        onFailure: (() -> Unit)? = null
+    ) {
+        val reportedBy = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
+
+        val reportData = hashMapOf(
+            "postId" to postId,
+            "reportedBy" to reportedBy,
+            "type" to reportType,
+            "textWritten" to textWritten,
+            "timestamp" to FieldValue.serverTimestamp()
+        ).apply {
+            guestName?.takeIf { it.isNotEmpty() }?.let { this["guestName"] = it }
+            guestEmail?.takeIf { it.isNotEmpty() }?.let { this["guestEmail"] = it }
+        }
+
+        FirebaseFirestore.getInstance()
+            .collection("copyrightedContentReport")
+            .add(reportData)
+            .addOnSuccessListener { onSuccess?.invoke() }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Failed to submit report: ${e.message}", Toast.LENGTH_LONG).show()
+                onFailure?.invoke()
+            }
+    }
+
+
+    private fun showReportReceivedDialog(context: Context) {
+        val bottomSheet = BottomSheetDialog(context)
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_copyright_message_submitted, null)
+        bottomSheet.setContentView(view)
+
+        view.findViewById<Button>(R.id.btnOk)?.setOnClickListener { bottomSheet.dismiss() }
+
+        expandBottomSheet(bottomSheet)
+        bottomSheet.show()
+    }
+
+    /** Helper to expand BottomSheet fully and handle system UI safely */
+    private fun expandBottomSheet(bottomSheet: BottomSheetDialog) {
+        (bottomSheet.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet))?.let { sheet ->
+            BottomSheetBehavior.from(sheet).apply {
+                state = BottomSheetBehavior.STATE_EXPANDED
+                isFitToContents = true
+                isDraggable = true
+            }
+        }
+
+        bottomSheet.window?.let { window ->
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            val isNightMode = (bottomSheet.context.resources.configuration.uiMode and
+                    Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                WindowCompat.getInsetsController(window, window.decorView)?.apply {
+                    isAppearanceLightStatusBars = !isNightMode
+                    isAppearanceLightNavigationBars = !isNightMode
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                window.decorView.systemUiVisibility = if (!isNightMode) {
+                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                } else 0
+            }
+        }
+    }
+
+    private fun formatCount(count: Long): String {
+        return when {
+            count >= 1_000_000 -> String.format("%.1fM", count / 1_000_000.0).replace(".0", "")
+            count >= 1000 -> String.format("%.1fK", count / 1000.0).replace(".0", "")
+            else -> count.toString()
+        }
+    }
+
+
+}
+
+
+
+
+
+
+package com.BHG.gurbani
+
+import android.content.Context
+import android.net.NetworkCapabilities
+import android.os.Bundle
+import android.os.Parcelable
+import android.view.*
+import androidx.activity.OnBackPressedCallback
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavOptions
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSnapHelper
+import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.BHG.gurbani.data.AppDatabase
+import com.BHG.gurbani.data.PostEntity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+class FeedFragment : Fragment() {
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var adapter: PostAdapter
+    private val postList = mutableListOf<Post>()
+
+    private var currentlyPlayingPosition = -1
+
+    private val db = FirebaseFirestore.getInstance()
+    private val currentUserId by lazy { FirebaseAuth.getInstance().currentUser?.uid.orEmpty() }
+
+    private val pageSize = 15
+    private var lastVisible: DocumentSnapshot? = null
+    private var isLoading = false
+    private var isLastPage = false
+    private var userIdFilter: String? = null
+    private var reportedPostIds = emptySet<String>()
+
+    private var isFragmentActive = false
+    private val job = kotlinx.coroutines.Job()
+    private val coroutineScope = CoroutineScope(job + Dispatchers.Main)
+
+
+
+    companion object {
+        var savedScrollState: Parcelable? = null
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_feed, container, false)
+
+        userIdFilter = arguments?.getString("userId")
+
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
+        recyclerView = view.findViewById(R.id.feedRecyclerView)
+        adapter = PostAdapter(postList)
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = adapter
+
+
+
+        swipeRefreshLayout.setOnRefreshListener {
+            findNavController().navigate(
+                R.id.feedFragment,
+                null,
+                NavOptions.Builder().setPopUpTo(R.id.feedFragment, true).build()
+            )
+        }
+
+
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(rv, dx, dy)
+                // Keep this part for infinite scrolling (pagination)
+                if (!rv.canScrollVertically(1) && !isLoading && !isLastPage && isInternetAvailable()) {
+                    loadMorePosts()
+                }
+
+                // --- New video playback logic for free scroll ---
+                playVisibleVideo()
+            }
+
+        })
+
+
+
+        if (postList.isEmpty()) {
+            if (isInternetAvailable()) {
+                swipeRefreshLayout.isRefreshing = true
+                resetFeed()
+            } else {
+                loadCachedPosts()
+            }
+        }
+
+        return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        isFragmentActive = true
+
+        // Handle back press safely after delay
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                lifecycleScope.launch {
+                    delay(50)
+                    isEnabled = false
+                    findNavController().navigate(R.id.homeFragment)
+                }
+            }
+        })
+    }
+
+    // It's also good practice to stop any video when the fragment is paused or destroyed.
+    override fun onPause() {
+        super.onPause()
+        savedScrollState = recyclerView.layoutManager?.onSaveInstanceState()
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(currentlyPlayingPosition) as? PostAdapter.PostViewHolder
+        viewHolder?.releasePlayer()
+        currentlyPlayingPosition = -1
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Release any lingering player
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(currentlyPlayingPosition) as? PostAdapter.PostViewHolder
+        viewHolder?.releasePlayer()
+        isFragmentActive = false
+        job.cancel()
+    }
+    private fun resetFeed() {
+        lastVisible = null
+        isLastPage = false
+        postList.clear()
+        adapter.notifyDataSetChanged()
+        adapter.clearUserInfoCache()
+        recyclerView.scrollToPosition(0)
+        loadReportedAndPosts()
+    }
+
+    private fun loadReportedAndPosts() {
+        db.collection("users").document(currentUserId)
+            .collection("reportedPosts")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                reportedPostIds = snapshot.documents.map { it.id }.toSet()
+                loadMorePosts()
+            }
+            .addOnFailureListener {
+                reportedPostIds = emptySet()
+                loadMorePosts()
+            }
+    }
+
+
+    private fun loadMorePosts() {
+        isLoading = true
+        val baseQuery = if (userIdFilter.isNullOrEmpty()) {
+            db.collection("posts").orderBy("timestamp", Query.Direction.DESCENDING)
+        } else {
+            db.collection("posts")
+                .whereEqualTo("postedBy", userIdFilter)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+        }
+
+        val query = lastVisible?.let {
+            baseQuery.startAfter(it).limit(pageSize.toLong())
+        } ?: baseQuery.limit(pageSize.toLong())
+
+        query.get().addOnSuccessListener { snapshot ->
+            if (!isAdded || !isFragmentActive) return@addOnSuccessListener
+
+            if (snapshot.isEmpty) {
+                isLastPage = true
+            } else {
+                val newPosts = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Post::class.java)?.copy(postId = doc.id)
+                }.filterNot { reportedPostIds.contains(it.postId) }
+
+                val insertStart = postList.size
+                postList.addAll(newPosts)
+                adapter.notifyItemRangeInserted(insertStart, newPosts.size)
+                lastVisible = snapshot.documents.lastOrNull()
+
+                // Cache new posts safely
+                coroutineScope.launch {
+                    if (!isAdded || !isFragmentActive) return@launch
+                    val postDao = AppDatabase.getInstance(requireContext()).postDao()
+                    val entities = newPosts.map {
+                        PostEntity(
+                            postId = it.postId,
+                            imageUrl = it.imageUrl,
+                            caption = it.caption,
+                            postedBy = it.postedBy,
+                            userName = it.userName,
+                            userProfileImage = it.userProfileImage,
+                            timestamp = it.timestamp,
+                            likeCount = it.likeCount,
+                            shareCount = it.shareCount
+                        )
+                    }
+                    if (insertStart == 0) postDao.clearAll()
+                    postDao.insertAll(entities)
+                }
+
+                // Restore scroll safely
+                if (insertStart == 0 && savedScrollState != null) {
+                    recyclerView.layoutManager?.onRestoreInstanceState(savedScrollState)
+                    savedScrollState = null
+                }
+            }
+
+            swipeRefreshLayout.isRefreshing = false
+            isLoading = false
+        }.addOnFailureListener {
+            if (!isAdded || !isFragmentActive) return@addOnFailureListener
+            swipeRefreshLayout.isRefreshing = false
+            isLoading = false
+        }
+    }
+
+
+    private fun loadCachedPosts() {
+        coroutineScope.launch {
+            if (!isAdded || !isFragmentActive) return@launch
+
+            val postDao = AppDatabase.getInstance(requireContext()).postDao()
+            val cachedPosts = postDao.getAllPosts()
+            postList.clear()
+            postList.addAll(cachedPosts.map {
+                Post(
+                    postId = it.postId,
+                    imageUrl = it.imageUrl,
+                    caption = it.caption,
+                    postedBy = it.postedBy,
+                    userName = it.userName,
+                    userProfileImage = it.userProfileImage,
+                    timestamp = it.timestamp,
+                    likeCount = it.likeCount,
+                    shareCount = it.shareCount
+                )
+            })
+            adapter.notifyDataSetChanged()
+
+            savedScrollState?.let {
+                recyclerView.layoutManager?.onRestoreInstanceState(it)
+                savedScrollState = null
+            }
+
+            swipeRefreshLayout.isRefreshing = false
+        }
+    }
+
+
+    private fun isInternetAvailable(): Boolean {
+        val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val capabilities = cm.getNetworkCapabilities(network)
+            capabilities != null && (
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                    )
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = cm.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            networkInfo != null && networkInfo.isConnected
+        }
+    }
+
+
+    private fun playVisibleVideo() {
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+        val firstVisible = layoutManager.findFirstVisibleItemPosition()
+        val lastVisible = layoutManager.findLastVisibleItemPosition()
+        var maxVisibility = 0.0
+        var videoToPlayPosition = -1
+
+        if (firstVisible != RecyclerView.NO_POSITION && lastVisible != RecyclerView.NO_POSITION) {
+            for (i in firstVisible..lastVisible) {
+                val child = layoutManager.findViewByPosition(i) ?: continue
+                val viewHeight = child.height
+                val scrolledIn = Math.min(child.bottom, recyclerView.height) - Math.max(child.top, 0)
+                val visibilityPercentage = scrolledIn.toFloat() / viewHeight
+
+                if (visibilityPercentage > maxVisibility) {
+                    val post = postList.getOrNull(i)
+                    if (post?.mediaType.equals("Video", ignoreCase = true)) {
+                        maxVisibility = visibilityPercentage.toDouble()
+                        videoToPlayPosition = i
+                    }
+                }
+            }
+        }
+
+        if (videoToPlayPosition != currentlyPlayingPosition) {
+            // Stop the old video
+            val oldViewHolder = recyclerView.findViewHolderForAdapterPosition(currentlyPlayingPosition) as? PostAdapter.PostViewHolder
+            oldViewHolder?.releasePlayer()
+
+            // Play the new video
+            if (videoToPlayPosition != -1) {
+                val newViewHolder = recyclerView.findViewHolderForAdapterPosition(videoToPlayPosition) as? PostAdapter.PostViewHolder
+                val postToPlay = postList.getOrNull(videoToPlayPosition)
+                if (postToPlay != null) {
+                    newViewHolder?.playVideo(postToPlay)
+                    currentlyPlayingPosition = videoToPlayPosition
+                }
+            } else {
+                currentlyPlayingPosition = -1
+            }
+        }
+    }
+
+
+
+
+
+}
+
+
