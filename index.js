@@ -367,7 +367,7 @@ app.post("/send-test-notification-token-with-destination", authorizeWorker, asyn
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, message: "Hukamnama sent to token", response });
+    res.status(200).json({ success: true, message: "sent to token", response });
   } catch (err) {
     console.error("FCM Error (hukamnama token):", err);
     res.status(500).json({ success: false, error: err.message });
