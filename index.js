@@ -361,7 +361,7 @@ app.post("/send-test-notification-token-with-destination", authorizeWorker, asyn
       }
     },
     data: {
-      destination: "path"
+      destination: "hukamnama"
     }
   };
 
